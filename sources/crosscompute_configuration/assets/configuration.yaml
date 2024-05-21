@@ -1,0 +1,509 @@
+---
+# Examples: https://github.com/crosscompute/crosscompute-examples
+# Forum: https://forum.crosscompute.com/t/configuration-file-design/235
+# Gallery: https://crosscompute.net
+# Documentation: https://docs.crosscompute.com
+
+# protocol version determines how this file is interpreted (required)
+crosscompute: 1.0.0
+
+# name summarizes what your tool does
+name: Tool X
+# slug customizes the tool uri
+slug: tool-x
+# title sets the page title
+title: Tool X - Improve health, safety, quality of life
+# description explains why your tool is useful
+description: Improve health, safety, quality of life in our communities
+# version should increment after you make changes to your tool
+version: 0.0.0
+
+# copyright declares who owns the rights to this tool or toolkit
+copyright:
+  text: >-
+    [<img src="{image_uri}" alt="{name}" loading="lazy">](
+    {owner_uri}) © {year}. Made with the [CrossCompute Analytics
+    Software Development Kit](https://docs.crosscompute.com).
+  name: CrossCompute
+  image_uri: /assets/logo.svg
+  owner_uri: https://crosscompute.com
+  year: 2024
+
+# network declares how your server coordinates with other servers
+network:
+  # markets are storefronts for tools
+  markets:
+    - uri: https://crosscompute.net
+    - path: market-uris.txt
+  # peers are other servers that can send, receive or run tools
+  peers:
+    - uri: https://example.com/peer-uris.txt
+    - path: peer-uris.txt
+  # keys are public keys used to authenticate markets and peers
+  keys:
+    - uri: https://example.com/network-keys.txt
+    - path: network-keys.txt
+
+# pricing specifies how you want to price your tool or toolkit
+pricing:
+  # account is where the customer sends your subscription payment
+  account: nano_abc
+  # period is how often the customer needs to send payment
+  period: month
+  # amount is how much the customer needs to send
+  amount: 100
+  # currency is the ISO 4217 code or cryptocurrency abbreviation
+  currency: xno
+
+# tools let you include other tools and define a toolkit
+tools:
+  # path specifies the location of the tool to include;
+  # aka references this tool in your templates;
+  - path: abc/automate.yml
+    aka: abc
+  # uri specifies the uri of the tool to include;
+  # visibility index means the tool appears in index and search but not home
+  - uri: https://github.com/crosscompute/crosscompute-examples
+    aka: examples
+    visibility: index
+  # hashes provide a way to verify the downloaded code;
+  # visibility search means the tool appears in search but not home and index
+  - uri: /t/add-numbers
+    aka: add_numbers
+    visibility: search
+    hashes:
+      - sha256: abc
+
+# results let you include other results in your reports
+results:
+  # path specifies the location of the result to include;
+  # aka references this result in your templates
+  - path: abc/results/aaa
+    aka: aaa
+  # uri specifies the uri of the result to include
+  - uri: /t/add-numbers/r/1-2
+    aka: one_two
+
+# input is how your scripts get data from the user
+input:
+  # input variables are provided to your scripts from the user or from presets
+  variables:
+    # id references this variable in your templates (required);
+    # view specifies how to render your variable (required);
+    # path specifies the file where your scripts load this variable (required);
+    #   note that path is relative to the input folder;
+    #   specify ENVIRONMENT to prevent saving the variable to disk;
+    # label sets the label text above the variable view;
+    # configuration customizes the look and feel of the view
+    - id: town_name
+      view: string
+      path: variables.dictionary
+      label: What is the name of your town?
+      configuration:
+        suggestions:
+          - value: Springfield
+          - value: Branson
+          - value: Nixa
+          - value: Mansfield
+          - value: Independence
+    - id: age
+      view: number
+      path: variables.dictionary
+      label: What is your age?
+    - id: secret_code
+      view: password
+      path: ENVIRONMENT
+      label: What is your secret code?
+    - id: support_email
+      view: email
+      path: ENVIRONMENT
+    - id: problem_description
+      view: text
+      path: problem.txt
+    - id: blurb
+      view: markdown
+      path: blurb.md
+    - id: flavor
+      view: radio
+      path: variables.dictionary
+      configuration:
+        options:
+          - name: Vanilla
+            value: vanilla
+          - name: Chocolate
+            value: chocolate
+          - name: Strawberry
+            value: strawberry
+    - id: topics
+      view: checkbox
+      path: variables.dictionary
+      configuration:
+        options:
+          - value: cooking
+          - value: reading
+          - value: writing
+          - value: mathematics
+          - value: swimming
+    - id: profile_photo
+      view: file
+      path: photo{index}{suffix}
+      configuration:
+        mime-types:
+          - image/png
+          - image/jpeg
+    - id: region
+      view: map-mapbox-location
+      path: variables.dictionary
+  # input templates guide the user on how to specify the input variables
+  templates:
+    # path specifies the markdown file for your template (required)
+    - path: input.md
+    # expression determines whether this template shows next
+    - path: input2.md
+      expression: age >= 18
+
+# output is how your scripts set data for the user
+output:
+  # output variables are provided by your scripts
+  variables:
+    # id references this variable in your templates (required);
+    # view specifies how to render your variable (required);
+    # path specifies the file where your scripts save this variable (required);
+    #   note that path is relative to the output folder;
+    # configuration customizes the view and is view-specific;
+    # mode overrides rendering mode
+    - id: document
+      view: link
+      path: document.pdf
+      configuration:
+        link-text: YOUR-LINK-TEXT
+        file-name: YOUR-FILE-NAME
+    - id: message
+      view: string
+      path: variables.dictionary
+    - id: count
+      view: number
+      path: variables.dictionary
+    - id: lyrics
+      view: text
+      path: lyrics.txt
+    - id: monologue
+      view: markdown
+      path: monologue.md
+    - id: logo
+      view: image
+      path: logo.svg
+    - id: counts
+      view: table
+      path: counts.json
+    - id: demo
+      view: frame
+      path: variables.dictionary
+    - id: cards
+      view: json
+      path: cards.json
+    # Here the checkbox is configured dynamically from buildings.json
+    # and will render as input because of the mode override
+    - id: buildings
+      view: checkbox
+      path: buildings.txt
+      configuration:
+        path: buildings.json
+      mode: input
+    - id: report
+      view: pdf
+      path: example.pdf
+    - id: region
+      view: map-mapbox
+      path: region.geojson
+      configuration:
+        style: mapbox://styles/mapbox/dark-v11
+        layers:
+          - type: fill
+            paint:
+              fill-color: blue
+          - type: circle
+            paint:
+              circle-color: red
+    - id: incidents
+      view: map-deck-screengrid
+      path: incidents.json
+      configuration:
+        style: mapbox://styles/mapbox/dark-v11
+    - id: identity
+      view: barcode
+      path: variables.dictionary
+  # output templates guide the user on how to interpret the output variables
+  templates:
+    # path specifies the markdown file for your template (required)
+    - path: output.md
+
+# log is how your scripts communicate with the user while running
+log:
+  variables:
+  templates:
+
+# debug is how your scripts record information for troubleshooting bugs
+debug:
+  variables:
+  templates:
+
+# print defines how your output will render as a document or presentation
+print:
+  # print variables are generated by crosscompute printers
+  variables:
+    # id references this file in your templates (required);
+    # view specifies how to render your file (required);
+    # path specifies where the printer should save the file (required);
+    # label sets the label text above the variable view;
+    # configuration customizes how the printer generates the file
+    - id: report
+      view: pdf
+      path: report.pdf
+      configuration:
+        header-footer:
+          font-family: sans-serif
+          font-size: 8pt
+          color: '#808080'
+          padding: 0.1in 0.25in
+          skip-first: true
+        page-number:
+          location: footer
+          alignment: right
+        name: '{y2 | slug}-{y3}.pdf'
+    - id: report-uri
+      view: link
+      path: report.pdf
+      label: Report URI
+      configuration:
+        path: report-uri.json
+
+# views are custom view classes for processing and rendering variables
+views:
+  # name is the view name;
+  # configuration is applied to all variables with this view;
+  # package specifies the path or uri of the python package defining the view
+  - name: map-mapbox
+    configuration:
+      style: mapbox://styles/mapbox/dark-v11
+  - name: a-view
+    package:
+      path: views/a-view
+  - name: b-view
+    package:
+      uri: https://pypi.org/project/b-view
+
+# tests verify that your tool works properly
+tests:
+  # folder sets input variables and checks selected output variables
+  - folder: tests/standard
+
+# presets are pre-defined sets of input variables
+presets:
+  # folder sets values for input variables;
+  # folder contains an input subfolder;
+  # input subfolder contains files for the input variables
+  - folder: presets/standard
+  # configuration sets variable values, where each row is a separate preset
+  # folder is the name of the folder saved to disk;
+  # name is the preset name displayed online;
+  # slug is the preset uri;
+  # the above string templates can include variable ids and filters
+  - folder: presets/{x1 | slug}-{x2}
+    name: '{x1 | title} {x2}'
+    slug: '{x1 | slug}-{x2}'
+    configuration:
+      path: datasets/presets.csv
+  # reference folder sets variable values missing in the configuration path;
+  # configuration sets variable values, where each row is a separate preset
+  - folder: presets/{x1 | slug}-{x2}
+    name: '{x1 | title} {x2}'
+    slug: '{x1 | slug}-{x2}'
+    reference:
+      folder: presets/standard
+    configuration:
+      path: datasets/presets.csv
+
+# datasets are files that are expected by your scripts
+datasets:
+  # path specifies the location that your scripts should use to load the file;
+  # reference path or uri specifies the location of your original file;
+  - path: datasets/abc.csv
+    reference:
+      path: datasets/abc-2024.csv
+  # use references to avoid changing paths in your scripts with new datasets;
+  # for example, suppose you have a report that relies on a yearly dataset;
+  # use path to fix a location where your scripts can expect to find the file;
+  # use reference path to point to the latest version of your yearly dataset
+  - path: datasets/def.csv
+    reference:
+      uri: https://example.net/def-2024.csv
+  # script runs a script to generate the dataset
+  - path: datasets/ghi.csv
+    script:
+      path: ghi.ipynb
+
+# scripts contain code that turn input variables into output variables
+scripts:
+  # command runs in the tool folder;
+  # folder paths are passed as arguments
+  - command: >-
+      python run.py
+      {input_folder} {output_folder} {log_folder} {debug_folder}
+  # path is a python script that runs in the tool folder;
+  # folder paths are passed as environment variables
+  - path: run.py
+  # path is a python script that runs in the specified folder;
+  # folder paths are passed as environment variables
+  - path: run.py
+    folder: scripts
+  # path is a jupyter notebook that runs in the tool folder;
+  # folder paths are passed as environment variables
+  - path: run.ipynb
+  # function is a python function that runs in the tool folder;
+  # folder paths are passed as function arguments
+  - function: run.plot_all
+
+# environment configures how your scripts run
+environment:
+  # processor is what processor type you want to use to run your scripts
+  processor: cpu
+  # memory is how much memory you want to reserve for your scripts
+  memory: 1gb
+  # engine runs your scripts and can be either podman or unsafe;
+  # podman is a container engine (see https://podman.io);
+  # unsafe means that the scripts will run directly on your machine
+  engine: podman
+  # image is the container used to run your scripts when using podman engine
+  image: python
+  # packages are dependencies required by your scripts;
+  # engine=unsafe will install the packages directly on your machine;
+  # engine=podman will install the packages in the container image
+  packages:
+    # id is the name of the package as defined in the package manager;
+    # manager is the name of a package manager such as pip, npm, dnf, apt
+    - id: matplotlib
+      manager: pip
+    - id: turf
+      manager: npm
+    # uri is the uri of the package;
+    - uri: "https://mirrors.rpmfusion.org/free/fedora/\
+        rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"
+      manager: dnf
+    - id: ffmpeg
+      manager: dnf
+    - id: libgeos-dev
+      manager: apt
+  # ports expose server processes running in your scripts
+  ports:
+    # id should correspond to a log or debug variable id that uses frame view;
+    # number is the port on which your script server process is listening
+    - id: demo
+      number: 8888
+  # variables are environment variables needed by your scripts
+  variables:
+    # id is the environment variable to make available to your script
+    - id: GOOGLE_KEY
+  # concurrency defines how your presets run;
+  # thread runs each preset as a separate thread;
+  # process runs each preset as a separate process;
+  # none runs each preset one at a time
+  concurrency: process
+  # interval specifies how long to wait before running your scripts again;
+  # use this setting to have dashboards update themselves;
+  # add an exclamation point to ensure the scripts run even if nobody watches
+  interval: 30 minutes
+
+# display configures the overall look and feel of your tool
+display:
+  # styles customize how your templates look
+  styles:
+    # path specifies the location of a css file
+    - path: style.css
+    # uri specifies the uri of a css file
+    - uri: https://cdn.jsdelivr.net/npm/pygments-css@1.0.0/default.css
+  # templates override the core templates used to render the site
+  templates:
+    # id specifies the name of the template to override;
+    # path specifies the location of a jinja template
+    - id: base
+      path: base.html
+    - id: live
+      path: live.html
+    - id: root
+      path: root.html
+  # pages override the design of specific pages
+  pages:
+    # id specifies the name of the page to override;
+    # configuration sets the design of the page
+    - id: tool
+      configuration:
+        # design input puts the input template on the tool page
+        design: input
+    - id: tool
+      configuration:
+        # design output puts the output template on the tool page
+        design: output
+    - id: tool
+      configuration:
+        # design none only renders the list of presets on the tool page
+        design: none
+    - id: input
+      configuration:
+        # design none removes all variable labels and css
+        design: none
+        # buttons override the design of specific buttons
+        buttons:
+          - id: continue
+            text: Continuar
+          - id: back
+            text: Volver
+    - id: output
+      configuration:
+        # design none removes all variable labels and css
+        design: none
+
+# authorization restricts access to your tool
+authorization:
+  # tokens are api keys for your tool;
+  # each token defines an identity
+  tokens:
+    # path specifies the location of a yaml file;
+    # the file should have tokens as keys and configuration settings as values;
+    # abcd:
+    #   role_name: admin
+    #   town_name: Springfield
+    # bcde:
+    #   role_name: leader
+    #   town_name: Branson
+    # cdef:
+    #   role_name: member
+    #   town_name: Mansfield
+    - path: tokens.yml
+  # groups define permissions
+  groups:
+    # configuration settings define how a group matches an identity;
+    # permission ids specify which privileges the identity can access
+    - configuration:
+        role_name: admin
+      permissions:
+        - id: add_token
+        - id: see_root
+        - id: see_tool
+        - id: see_preset
+        - id: run_tool
+    # note that the value for each configuration setting can also be a list;
+    # then an identity will match this group if its setting matches a value
+    - configuration:
+        role_name:
+          - leader
+          - member
+      permissions:
+        - id: see_root
+        - id: see_tool
+        - id: see_preset
+          # action match is specific to the permission see_preset;
+          # in the example above, suppose that a user uses the token cdef;
+          # then the user will have town_name Mansfield and
+          # can only see presets whose input variable town_name is Mansfield
+          action: match
