@@ -25,6 +25,8 @@ async def start(arguments=None):
     for tool_definition in configuration.tool_definitions:
         tool_slug = tool_definition.slug
         print(tool_slug)
+    from pprint import pprint
+    pprint(configuration.__dict__)
 
 
 def configure_argument_parser_for_examining(a):
