@@ -102,7 +102,7 @@ async def load_configuration(path_or_folder, locus='0'):
 
 async def load_configuration_from_path(path, locus):
     path = Path(path).absolute()
-    L.debug('loading "%s"', redact_path(path))
+    L.debug('"%s" is loading', redact_path(path))
     try:
         c = await load_raw_configuration(path)
         c = await ToolDefinition.load(c, path=path, locus=locus)
