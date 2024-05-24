@@ -17,18 +17,23 @@ class CrossComputeError(Exception):
             self.code = kwargs['code']
         super().__init__(*args)
 
+
     def __str__(self):
-        text = super().__str__()
+        texts = [super().__str__()]
         if hasattr(self, 'variable_id'):
-            text += f' for variable "{self.variable_id}"'
+            texts.append(f'variable_id="{self.variable_id}"')
         if hasattr(self, 'path'):
-            text += f' in path "{redact_path(self.path)}"'
+            texts.append(f'path="{redact_path(self.path)}"')
         if hasattr(self, 'uri'):
-            text += f' with uri "{self.uri}"'
+            texts.append(f'uri="{self.uri}"')
+        if hasattr(self, 'code'):
+            texts.append(f'code={self.code}')
         if hasattr(self, 'tool'):
             tool = self.tool
-            text + f' of tool "{tool.name} {tool.version}"'
-        return text
+            texts.extend([
+                f'tool_name="{tool.name}"'
+                f'tool_version="{tool.version}"'])
+        return '; '.join(texts)
 
 
 class CrossComputeFormatError(CrossComputeError):
