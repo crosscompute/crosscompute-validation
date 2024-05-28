@@ -1,5 +1,7 @@
+import csv
 from collections import Counter
 from logging import getLogger
+from os.path import basename
 from pathlib import Path
 
 from aiofiles import open
@@ -12,9 +14,11 @@ from ..constants import (
     STEP_NAMES,
     TOOLKIT_NAME,
     TOOL_NAME,
-    TOOL_VERSION)
+    TOOL_VERSION,
+    VARIABLE_ID_TEMPLATE_PATTERN)
 from ..errors import (
     CrossComputeConfigurationError,
+    CrossComputeDataError,
     CrossComputeError,
     CrossComputeFormatError)
 from ..macros.disk import (
@@ -22,10 +26,15 @@ from ..macros.disk import (
     is_file_path,
     is_folder_path,
     list_paths)
+from ..macros.iterable import (
+    apply_functions)
 from ..macros.log import (
     redact_path)
 from ..macros.text import (
     format_slug)
+from .variable import (
+    ParsableVariableView,
+    load_variable_data_by_id)
 
 
 class Definition(dict):
@@ -62,23 +71,40 @@ class ToolDefinition(Definition):
         self._validation_functions.extend([
             validate_tool_identifiers,
             validate_tools,
+            validate_steps,
+            validate_presets,
         ])
+
+    def get_variable_definitions(self, step_name):
+        d = self.step_definition_by_name
+        if step_name not in d:
+            return []
+        return d[step_name].variable_definitions
 
 
 class StepDefinition(Definition):
 
-    def __init__(self, d, **kwargs):
-        super().__init__(d, **kwargs)
+    async def _initialize(self, **kwargs):
         self.name = kwargs['name']
         self._validation_functions.extend([
             validate_step_variables,
             validate_step_templates])
 
 
+class PresetDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self.tool_definition = kwargs['tool_definition']
+        self.data = kwargs['data']
+        self._validation_functions.extend([
+            validate_preset_identifiers,
+            validate_preset_reference,
+            validate_preset_configuration])
+
+
 class VariableDefinition(Definition):
 
-    def __init__(self, d, **kwargs):
-        super().__init__(d, **kwargs)
+    async def _initialize(self, **kwargs):
         self._validation_functions.extend([
             validate_variable_identifiers])
 
@@ -209,6 +235,24 @@ async def validate_steps(d):
     return {'step_definition_by_name': step_definition_by_name}
 
 
+async def validate_presets(d):
+    preset_definitions = []
+    for preset_dictionary in get_dictionaries(d, 'presets'):
+        preset_definition = await PresetDefinition.load(
+            preset_dictionary, tool_definition=d, data={})
+        preset_definitions.extend(preset_definition.preset_definitions)
+    if 'output' in d and not preset_definitions:
+        raise CrossComputeConfigurationError(
+            'no presets found; define at least one preset')
+    assert_unique_values([
+        _.folder_name for _ in preset_definitions], 'preset folder "{x}"')
+    assert_unique_values([
+        _.name for _ in preset_definitions], 'preset name "{x}"')
+    assert_unique_values([
+        _.slug for _ in preset_definitions], 'preset slug "{x}"')
+    return {'preset_definitions': preset_definitions}
+
+
 async def validate_step_variables(d):
     variable_dictionaries = get_dictionaries(d, 'variables')
     variable_definitions = [await VariableDefinition.load(
@@ -218,6 +262,73 @@ async def validate_step_variables(d):
 
 async def validate_step_templates(d):
     return {'template_definitions': []}
+
+
+async def validate_preset_identifiers(d):
+    folder = get_text(d, 'folder')
+    name = get_text(d, 'name', basename(folder))
+    slug = get_text(d, 'slug', name)
+    data_by_id = d.data.get('input', {})
+    try:
+        folder = format_text(folder, data_by_id)
+        name = format_text(name, data_by_id)
+        slug = format_text(slug, data_by_id)
+    except CrossComputeConfigurationError as e:
+        if hasattr(e, 'variable_id'):
+            preset_configuration = get_dictionary(d, 'configuration')
+            if 'path' in preset_configuration:
+                e.path = preset_configuration['path']
+        raise
+    if 'slug' not in d:
+        slug = format_slug(slug)
+    return {
+        'folder_name': folder,
+        'name': name,
+        'slug': slug}
+
+
+async def validate_preset_reference(d):
+    preset_reference = get_dictionary(d, 'reference')
+    if 'folder' in preset_reference:
+        tool_definition = d.tool_definition
+        tool_folder = tool_definition.absolute_folder
+        input_variable_definitions = tool_definition.get_variable_definitions(
+            'input')
+        reference_data_by_id = await load_variable_data_by_id(
+            tool_folder / preset_reference['folder'] / 'input',
+            input_variable_definitions)
+    else:
+        reference_data_by_id = {}
+    return {'__reference_data_by_id': reference_data_by_id}
+
+
+async def validate_preset_configuration(d):
+    preset_definitions = []
+    preset_dictionary = d.copy()
+    preset_configuration = preset_dictionary.pop('configuration', {})
+    reference_data_by_id = d.__reference_data_by_id
+    tool_definition = d.tool_definition
+    if 'path' in preset_configuration:
+        tool_folder = tool_definition.absolute_folder
+        path = tool_folder / preset_configuration.pop('path')
+        suffix = path.suffix
+        try:
+            yield_data_by_id = YIELD_DATA_BY_ID_BY_SUFFIX[suffix]
+        except KeyError:
+            raise CrossComputeConfigurationError(
+                f'preset configuration suffix "{suffix}" is not supported')
+        input_variable_definitions = tool_definition.get_variable_definitions(
+            'input')
+        async for _ in yield_data_by_id(path, input_variable_definitions):
+            data = {'input': reference_data_by_id | _ | preset_configuration}
+            preset_definition = await PresetDefinition.load(
+                d, tool_definition=tool_definition, data=data)
+            preset_definitions.extend(preset_definition.preset_definitions)
+    else:
+        data_by_id = reference_data_by_id | preset_configuration
+        d.data['input'] = d.data.get('input', {}) | data_by_id
+        preset_definitions.append(d)
+    return {'preset_definitions': preset_definitions}
 
 
 async def validate_variable_identifiers(d):
@@ -231,7 +342,70 @@ async def validate_variable_identifiers(d):
     return {
         'id': variable_id,
         'view_name': view_name,
-        'path_string': variable_path}
+        'path_name': variable_path}
+
+
+async def yield_data_by_id_from_csv(path, variable_definitions):
+    try:
+        async with open(path, mode='rt') as f:
+            lines = await f.readlines()
+            csv_reader = csv.reader(lines)
+            keys = [_.strip() for _ in next(csv_reader)]
+            for values in csv_reader:
+                data_by_id = {k: {'value': v} for k, v in zip(keys, values)}
+                data_by_id = await parse_data_by_id(
+                    data_by_id, variable_definitions)
+                if data_by_id.get('#') == '#':
+                    continue
+                yield data_by_id
+    except OSError as e:
+        raise CrossComputeConfigurationError(e)
+    except StopIteration:
+        pass
+
+
+async def yield_data_by_id_from_txt(path, variable_definitions):
+    if len(variable_definitions) > 1:
+        raise CrossComputeConfigurationError(
+            'use preset configuration suffix ".csv" to configure multiple '
+            'variables')
+    try:
+        variable_id = variable_definitions[0].id
+    except IndexError:
+        raise CrossComputeConfigurationError(
+            'define at least one input variable when using preset '
+            'configuration suffix ".txt"')
+    try:
+        async with open(path, mode='rt') as f:
+            lines = await f.readlines()
+            for line in lines:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                data_by_id = {variable_id: {'value': line}}
+                yield parse_data_by_id(data_by_id, variable_definitions)
+    except OSError as e:
+        raise CrossComputeConfigurationError(e)
+
+
+async def parse_data_by_id(data_by_id, variable_definitions):
+    for variable_definition in variable_definitions:
+        variable_id = variable_definition.id
+        try:
+            variable_data = data_by_id[variable_id]
+        except KeyError:
+            continue
+        if 'value' not in variable_data:
+            continue
+        variable_value = variable_data['value']
+        variable_view = ParsableVariableView.get_from(variable_definition)
+        try:
+            variable_value = await variable_view.parse(variable_value)
+        except CrossComputeDataError as e:
+            e.variable_id = variable_id
+            raise
+        variable_data['value'] = variable_value
+    return data_by_id
 
 
 def get_dictionaries(d, k):
@@ -243,11 +417,54 @@ def get_dictionaries(d, k):
     return values
 
 
+def get_dictionary(d, k):
+    value = d.get(k, {})
+    if not isinstance(value, dict):
+        raise CrossComputeConfigurationError(f'"{k}" must be a dictionary')
+    return value
+
+
 def get_list(d, k):
     value = d.get(k, [])
     if not isinstance(value, list):
         raise CrossComputeConfigurationError(f'"{k}" must be a list')
     return value
+
+
+def get_text(d, k, default=None):
+    value = d.get(k) or default
+    if isinstance(value, dict):
+        raise CrossComputeConfigurationError(
+            f'"{k}" must be surrounded with quotes when it begins with a {{')
+    return value
+
+
+def format_text(text, data_by_id):
+    if not data_by_id:
+        return text
+
+    def f(match):
+        matching_inner_text = match.group(1)
+        terms = matching_inner_text.split('|')
+        variable_id = terms[0].strip()
+        try:
+            variable_data = data_by_id[variable_id]
+        except KeyError:
+            raise CrossComputeConfigurationError(
+                f'preset "{text}" missing value',
+                variable_id=variable_id)
+        value = variable_data.get('value', '')
+        try:
+            value = apply_functions(value, terms[1:], {
+                'slug': format_slug,
+                'title': str.title})
+        except KeyError as e:
+            raise CrossComputeConfigurationError(
+                f'function "{e.args[0]}" is not supported in '
+                f'"{matching_inner_text}"')
+        return str(value)
+
+    return VARIABLE_ID_TEMPLATE_PATTERN.sub(f, text)
 
 
 def assert_unique_values(values, description):
@@ -257,4 +474,7 @@ def assert_unique_values(values, description):
                 description.format(x=x) + ' is not unique')
 
 
+YIELD_DATA_BY_ID_BY_SUFFIX = {
+    '.csv': yield_data_by_id_from_csv,
+    '.txt': yield_data_by_id_from_txt}
 L = getLogger(__name__)

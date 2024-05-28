@@ -17,7 +17,6 @@ class CrossComputeError(Exception):
             self.code = kwargs['code']
         super().__init__(*args)
 
-
     def __str__(self):
         texts = [super().__str__()]
         if hasattr(self, 'variable_id'):
@@ -41,4 +40,8 @@ class CrossComputeFormatError(CrossComputeError):
 
 
 class CrossComputeConfigurationError(CrossComputeError):
+    pass
+
+
+class CrossComputeDataError(CrossComputeError):
     pass
