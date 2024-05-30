@@ -5,17 +5,8 @@ from .macros.log import (
 class CrossComputeError(Exception):
 
     def __init__(self, *args, **kwargs):
-        if 'variable_id' in kwargs:
-            self.variable_id = kwargs['variable_id']
-        if 'path' in kwargs:
-            self.path = kwargs['path']
-        if 'uri' in kwargs:
-            self.uri = kwargs['uri']
-        if 'tool' in kwargs:
-            self.tool = kwargs['tool']
-        if 'code' in kwargs:
-            self.code = kwargs['code']
         super().__init__(*args)
+        self.__dict__.update(kwargs)
 
     def __str__(self):
         texts = [super().__str__()]

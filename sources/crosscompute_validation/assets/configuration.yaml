@@ -59,7 +59,7 @@ pricing:
 tools:
   # path specifies the location of the tool to include;
   # aka references this tool in your templates;
-  - path: abc/automate.yml
+  - path: abc/automate.yaml
     aka: abc
   # uri specifies the uri of the tool to include;
   # visibility index means the tool appears in index and search but not home
@@ -410,9 +410,10 @@ environment:
   # none runs each preset one at a time
   concurrency: process
   # interval specifies how long to wait before running your scripts again;
-  # use this setting to have dashboards update themselves;
-  # add an exclamation point to ensure the scripts run even if nobody watches
+  # use this setting to have dashboards update themselves
   interval: 30 minutes
+  # add an exclamation point to ensure the scripts run even if nobody watches
+  interval: 30 minutes!
 
 # display configures the overall look and feel of your tool
 display:
@@ -479,7 +480,7 @@ authorization:
     # cdef:
     #   role_name: member
     #   town_name: Mansfield
-    - path: tokens.yml
+    - path: tokens.yaml
   # groups define permissions
   groups:
     # configuration settings define how a group matches an identity;
