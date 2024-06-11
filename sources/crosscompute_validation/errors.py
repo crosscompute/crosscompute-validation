@@ -1,4 +1,4 @@
-from .macros.log import (
+from crosscompute_macros.log import (
     redact_path)
 
 

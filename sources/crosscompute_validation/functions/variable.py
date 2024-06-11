@@ -1,17 +1,18 @@
 import json
 from logging import getLogger
 
-from ..constants import (
-    MAXIMUM_RAW_DATA_BYTE_COUNT,
-    MAXIMUM_RAW_DATA_CACHE_LENGTH)
-from ..errors import (
-    CrossComputeDataError)
-from ..macros.disk import (
+from crosscompute_macros.disk import (
     FileCache,
     get_byte_count,
     is_existing_path,
     load_raw_json,
     load_raw_text)
+
+from ..constants import (
+    MAXIMUM_RAW_DATA_BYTE_COUNT,
+    MAXIMUM_RAW_DATA_CACHE_LENGTH)
+from ..errors import (
+    CrossComputeDataError)
 from ..settings import (
     view_by_name)
 

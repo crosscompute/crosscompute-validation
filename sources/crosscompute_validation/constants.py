@@ -19,3 +19,12 @@ VARIABLE_ID_TEMPLATE_PATTERN = re.compile(r'{ *([a-zA-Z0-9_| ]+?) *}')
 
 MAXIMUM_RAW_DATA_BYTE_COUNT = 1024
 MAXIMUM_RAW_DATA_CACHE_LENGTH = 256
+
+
+SCRIPT_LANGUAGE = 'python'
+ENGINE_NAME = 'podman'
+IMAGE_NAME = 'python'
+PACKAGE_MANAGER_NAMES = 'dnf', 'apt', 'pip', 'npm'
+
+
+SUPPORT_EMAIL = 'support@crosscompute.com'

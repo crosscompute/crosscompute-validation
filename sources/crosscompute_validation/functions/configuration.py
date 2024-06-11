@@ -1,17 +1,36 @@
 import csv
 from collections import Counter
 from logging import getLogger
+from os import environ
 from os.path import basename
 from pathlib import Path
 
 from aiofiles import open
+from crosscompute_macros.disk import (
+    is_existing_path,
+    is_file_path,
+    is_folder_path,
+    is_link_path,
+    list_paths)
+from crosscompute_macros.iterable import (
+    apply_functions,
+    find_item)
+from crosscompute_macros.log import (
+    redact_path)
+from crosscompute_macros.text import (
+    format_slug)
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
 from ..constants import (
     CONFIGURATION_NAME,
+    ENGINE_NAME,
     ERROR_CONFIGURATION_NOT_FOUND,
+    IMAGE_NAME,
+    PACKAGE_MANAGER_NAMES,
+    SCRIPT_LANGUAGE,
     STEP_NAMES,
+    SUPPORT_EMAIL,
     TOOLKIT_NAME,
     TOOL_NAME,
     TOOL_VERSION,
@@ -21,19 +40,10 @@ from ..errors import (
     CrossComputeDataError,
     CrossComputeError,
     CrossComputeFormatError)
-from ..macros.disk import (
-    is_existing_path,
-    is_file_path,
-    is_folder_path,
-    list_paths)
-from ..macros.iterable import (
-    apply_functions)
-from ..macros.log import (
-    redact_path)
-from ..macros.text import (
-    format_slug)
+from ..settings import (
+    shell_name)
 from .variable import (
-    ParsableVariableView,
+    VariableView,
     load_variable_data_by_id)
 
 
@@ -73,7 +83,9 @@ class ToolDefinition(Definition):
             validate_tools,
             validate_steps,
             validate_presets,
-        ])
+            validate_datasets,
+            validate_scripts,
+            validate_environment])
 
     def get_variable_definitions(self, step_name):
         d = self.step_definition_by_name
@@ -102,11 +114,55 @@ class PresetDefinition(Definition):
             validate_preset_configuration])
 
 
+class DatasetDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self.tool_definition = kwargs['tool_definition']
+        self._validation_functions.extend([
+            validate_dataset_identifiers,
+            validate_dataset_reference,
+            # validate_dataset_script,
+        ])
+
+
+class ScriptDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self.tool_definition = kwargs['tool_definition']
+        self._validation_functions.extend([
+            validate_script_identifiers])
+
+
+class EnvironmentDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self.tool_definition = kwargs['tool_definition']
+        self._validation_functions.extend([
+            validate_engine,
+            validate_packages,
+            validate_ports,
+            validate_environment_variables])
+
+
 class VariableDefinition(Definition):
 
     async def _initialize(self, **kwargs):
         self._validation_functions.extend([
             validate_variable_identifiers])
+
+
+class PackageDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self._validation_functions.extend([
+            validate_package_identifiers])
+
+
+class PortDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self._validation_functions.extend([
+            validate_port_identifiers])
 
 
 async def load_configuration(path_or_folder, locus='0'):
@@ -253,6 +309,27 @@ async def validate_presets(d):
     return {'preset_definitions': preset_definitions}
 
 
+async def validate_datasets(d):
+    dataset_dictionaries = get_dictionaries(d, 'datasets')
+    dataset_definitions = [await DatasetDefinition.load(
+        _, tool_definition=d) for _ in dataset_dictionaries]
+    return {'dataset_definitions': dataset_definitions}
+
+
+async def validate_scripts(d):
+    script_dictionaries = get_dictionaries(d, 'scripts')
+    script_definitions = [await ScriptDefinition.load(
+        _, tool_definition=d) for _ in script_dictionaries]
+    return {'script_definitions': script_definitions}
+
+
+async def validate_environment(d):
+    environment_dictionary = get_dictionary(d, 'environment')
+    environment_definition = await EnvironmentDefinition.load(
+        environment_dictionary, tool_definition=d)
+    return {'environment_definition': environment_definition}
+
+
 async def validate_step_variables(d):
     variable_dictionaries = get_dictionaries(d, 'variables')
     variable_definitions = [await VariableDefinition.load(
@@ -331,6 +408,118 @@ async def validate_preset_configuration(d):
     return {'preset_definitions': preset_definitions}
 
 
+async def validate_dataset_identifiers(d):
+    dataset_path = get_path(d)
+    if not dataset_path:
+        raise CrossComputeConfigurationError(
+            'path is required for each dataset')
+    return {'path': dataset_path}
+
+
+async def validate_dataset_reference(d):
+    dataset_reference = get_dictionary(d, 'reference')
+    if 'path' in dataset_reference:
+        reference_path = get_path(dataset_reference)
+        if reference_path:
+            tool_folder = d.tool_definition.absolute_folder
+            source_path = tool_folder / reference_path
+            if not await is_existing_path(source_path):
+                if await is_link_path(source_path):
+                    raise CrossComputeConfigurationError(
+                        f'dataset reference link "{reference_path}" is '
+                        'invalid')
+                elif source_path.name == 'results':
+                    source_path.mkdir(parents=True)
+                else:
+                    raise CrossComputeConfigurationError(
+                        f'dataset reference path "{reference_path}" was not '
+                        'found')
+            target_path = d.path
+            if await is_existing_path(
+                    target_path) and not await is_link_path(target_path):
+                raise CrossComputeConfigurationError(
+                    'dataset path conflicts with existing file: please '
+                    f'relocate "{target_path}" from the disk to continue')
+    elif 'uri' in dataset_reference:
+        pass
+    return {'reference': dataset_reference}
+
+
+async def validate_script_identifiers(d):
+    method_names = []
+    if 'command' in d:
+        command_string = d['command']
+        preparation_dictionary = {}
+        method_names.append('command')
+    if 'path' in d:
+        command_string, preparation_dictionary = prepare_script_path(
+            d['path'])
+        method_names.append('path')
+    if 'function' in d:
+        command_string, preparation_dictionary = prepare_script_function(
+            d.get('language', SCRIPT_LANGUAGE), d['function'])
+        method_names.append('function')
+    if not method_names:
+        raise CrossComputeConfigurationError(
+            'script command or path or function is required')
+    elif len(method_names) > 1:
+        method_string = ' and '.join(method_names)
+        raise CrossComputeConfigurationError(
+            f'script {method_string} conflict; choose one')
+    return {
+        'folder': Path(d.get('folder', '.')),
+        'command_string': command_string,
+        'preparation_dictionary': preparation_dictionary}
+
+
+async def validate_engine(d):
+    return {
+        'engine_name': d.get('engine', ENGINE_NAME),
+        'parent_image_name': d.get('image', IMAGE_NAME)}
+
+
+async def validate_packages(d):
+    package_dictionaries = get_dictionaries(d, 'packages')
+    package_definitions = [await PackageDefinition.load(
+        _) for _ in package_dictionaries]
+    return {
+        'package_definitions': package_definitions}
+
+
+async def validate_ports(d):
+    port_definitions = []
+    f = d.tool_definition.get_variable_definitions
+    variable_definitions = f('log') + f('debug')
+    for port_dictionary in get_dictionaries(d, 'ports'):
+        port_definition = await PortDefinition.load(port_dictionary)
+        port_id = port_definition.id
+        try:
+            variable_definition = find_item(
+                variable_definitions, 'id', port_id)
+        except StopIteration:
+            raise CrossComputeConfigurationError(
+                f'port "{port_id}" must correspond to a log or debug variable')
+        port_definition.step_name = variable_definition.step_name
+        port_definitions.append(port_definition)
+    return {
+        'port_definitions': port_definitions}
+
+
+async def validate_environment_variables(d):
+    variable_dictionaries = get_dictionaries(d, 'variables')
+    variable_definitions = []
+    for variable_dictionary in variable_dictionaries:
+        variable_id = variable_dictionary['id']
+        if variable_id not in environ:
+            L.error('environment is missing variable "%s"', variable_id)
+        variable_definition = VariableDefinition()
+        variable_definition.id = variable_id
+        variable_definitions.append(variable_definition)
+    assert_unique_values([
+        _.id for _ in variable_definitions], 'environment variable id "{x}"')
+    return {'variable_definitions': variable_definitions}
+
+
 async def validate_variable_identifiers(d):
     try:
         variable_id = d['id'].strip()
@@ -343,6 +532,38 @@ async def validate_variable_identifiers(d):
         'id': variable_id,
         'view_name': view_name,
         'path_name': variable_path}
+
+
+async def validate_package_identifiers(d):
+    try:
+        package_id = d['id']
+        manager_name = d['manager']
+    except KeyError as e:
+        raise CrossComputeConfigurationError(
+            f'{e} is required for each package')
+    if manager_name not in PACKAGE_MANAGER_NAMES:
+        raise CrossComputeConfigurationError(
+            f'manager "{manager_name}" is not supported')
+    return {
+        'id': package_id,
+        'manager_name': manager_name}
+
+
+async def validate_port_identifiers(d):
+    try:
+        port_id = d['id']
+        port_number = d['number']
+    except KeyError as e:
+        raise CrossComputeConfigurationError(
+            f'{e} is required for each port')
+    try:
+        port_number = int(port_number)
+    except ValueError:
+        raise CrossComputeConfigurationError(
+            f'port number "{port_number}" must be an integer')
+    return {
+        'id': port_id,
+        'number': port_number}
 
 
 async def yield_data_by_id_from_csv(path, variable_definitions):
@@ -398,7 +619,7 @@ async def parse_data_by_id(data_by_id, variable_definitions):
         if 'value' not in variable_data:
             continue
         variable_value = variable_data['value']
-        variable_view = ParsableVariableView.get_from(variable_definition)
+        variable_view = VariableView.get_from(variable_definition)
         try:
             variable_value = await variable_view.parse(variable_value)
         except CrossComputeDataError as e:
@@ -406,6 +627,47 @@ async def parse_data_by_id(data_by_id, variable_definitions):
             raise
         variable_data['value'] = variable_value
     return data_by_id
+
+
+def prepare_script_path(script_path):
+    path = Path(script_path)
+    match path.suffix:
+        case '.py':
+            command_string = f'python "{path}"'
+            preparation_dictionary = {}
+        case '.ipynb':
+            new_path = '.' + str(path.with_suffix('.ipynb.py'))
+            command_string = f'python "{new_path}"'
+            preparation_dictionary = {
+                'target_path': new_path,
+                'notebook_path': path}
+        case '.sh':
+            command_string = f'{shell_name} "{path}"'
+            preparation_dictionary = {}
+        case _:
+            suffixes_string = ' '.join(['.py', '.ipynb'])
+            raise CrossComputeConfigurationError(
+                f'script path suffix can be one of {suffixes_string}; '
+                f'message {SUPPORT_EMAIL} to request support for '
+                'more suffixes')
+    return command_string, preparation_dictionary
+
+
+def prepare_script_function(script_language, function_string):
+    match script_language:
+        case 'python':
+            path = '.run.py'
+            command_string = f'python "{path}"'
+            preparation_dictionary = {
+                'target_path': path,
+                'function_string': function_string}
+        case _:
+            languages_string = ' '.join(['python'])
+            raise CrossComputeConfigurationError(
+                f'script language can be one of {languages_string}; '
+                f'message {SUPPORT_EMAIL} to request support for '
+                'more languages')
+    return command_string, preparation_dictionary
 
 
 def get_dictionaries(d, k):
@@ -437,6 +699,13 @@ def get_text(d, k, default=None):
         raise CrossComputeConfigurationError(
             f'"{k}" must be surrounded with quotes when it begins with a {{')
     return value
+
+
+def get_path(d):
+    path = d.get('path', '').strip()
+    if not path:
+        return
+    return Path(path)
 
 
 def format_text(text, data_by_id):
