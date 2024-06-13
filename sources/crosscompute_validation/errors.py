@@ -21,7 +21,7 @@ class CrossComputeError(Exception):
         if hasattr(self, 'tool'):
             tool = self.tool
             texts.extend([
-                f'tool_name="{tool.name}"'
+                f'tool_name="{tool.name}"',
                 f'tool_version="{tool.version}"'])
         return '; '.join(texts)
 
