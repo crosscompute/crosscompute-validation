@@ -38,4 +38,4 @@ Issues = "https://github.com/crosscompute/crosscompute-validation/issues"
 # Changelog = ""
 
 [tool.hatch.build]
-packages = ["sources/crosscompute_macros"]
+packages = ["sources/crosscompute_validation"]
