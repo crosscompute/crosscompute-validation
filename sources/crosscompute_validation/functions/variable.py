@@ -7,6 +7,8 @@ from crosscompute_macros.disk import (
     is_existing_path,
     load_raw_json,
     load_raw_text)
+from crosscompute_macros.package import import_attribute
+from importlib_metadata import entry_points
 
 from ..constants import (
     MAXIMUM_RAW_DATA_BYTE_COUNT,
@@ -40,7 +42,11 @@ class VariableView:
         return data
 
 
-def initialize_view_by_name(d=None):
+def initialize_view_by_name(d=None, with_entry_points=False):
+    if with_entry_points:
+        for entry_point in entry_points().select(group='crosscompute.views'):
+            view_by_name[entry_point.name] = import_attribute(
+                entry_point.value)
     if d:
         view_by_name.update(d)
 
