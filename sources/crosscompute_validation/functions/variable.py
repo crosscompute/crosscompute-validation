@@ -19,7 +19,7 @@ from ..settings import (
     view_by_name)
 
 
-class VariableView:
+class LoadableVariableView:
 
     name = 'variable'
 
@@ -77,7 +77,7 @@ async def load_variable_data(path, variable):
     else:
         variable_data = raw_data
     if 'value' in variable_data:
-        variable_view = VariableView.get_from(variable)
+        variable_view = LoadableVariableView.get_from(variable)
         variable_data['value'] = await variable_view.parse(variable_data[
             'value'])
     return variable_data
