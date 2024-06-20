@@ -43,7 +43,7 @@ from ..errors import (
 from ..settings import (
     shell_name)
 from .variable import (
-    VariableView,
+    LoadableVariableView,
     load_variable_data_by_id)
 
 
@@ -619,7 +619,7 @@ async def parse_data_by_id(data_by_id, variable_definitions):
         if 'value' not in variable_data:
             continue
         variable_value = variable_data['value']
-        variable_view = VariableView.get_from(variable_definition)
+        variable_view = LoadableVariableView.get_from(variable_definition)
         try:
             variable_value = await variable_view.parse(variable_value)
         except CrossComputeDataError as e:
