@@ -97,10 +97,12 @@ async def load_raw_data(path):
 async def load_dictionary_data(path):
     try:
         value = await load_raw_json(path)
-    except (json.JSONDecodeError, OSError) as e:
-        raise CrossComputeDataError(e, path=path)
+    except OSError as e:
+        raise CrossComputeDataError(f'file does not load; {e}', path=path)
+    except json.JSONDecodeError as e:
+        raise CrossComputeDataError(f'json expected; {e}', path=path)
     if not isinstance(value, dict):
-        raise CrossComputeDataError('dictionary was expected', path=path)
+        raise CrossComputeDataError('dictionary expected', path=path)
     return {'value': value}
 
 
