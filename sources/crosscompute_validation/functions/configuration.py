@@ -79,6 +79,7 @@ class ToolDefinition(Definition):
         self.absolute_folder = path.parent
         self.locus = kwargs['locus']
         self._validation_functions.extend([
+            validate_paths,
             validate_tool_identifiers,
             validate_tools,
             validate_steps,
@@ -247,6 +248,33 @@ async def load_raw_configuration_yaml(configuration_path, with_comments=False):
     except (OSError, YAMLError) as e:
         raise CrossComputeConfigurationError(e)
     return configuration or {}
+
+
+async def validate_paths(d):
+    packs = list(d.items())
+    folder = d.absolute_folder
+    while packs:
+        k, v = packs.pop()
+        if isinstance(v, dict):
+            packs.extend(v.items())
+        elif isinstance(v, list):
+            for x in v:
+                try:
+                    packs.extend(x.items())
+                except AttributeError:
+                    pass
+        elif k in ['path', 'folder']:
+            try:
+                path = folder / v
+            except TypeError:
+                raise CrossComputeConfigurationError(f'"{k}" must be a string')
+            try:
+                path.resolve().relative_to(folder)
+            except ValueError:
+                raise CrossComputeConfigurationError(
+                    f'path "{v}" must be within '
+                    f'folder "{redact_path(folder)}"')
+    return {}
 
 
 async def validate_tool_identifiers(d):
