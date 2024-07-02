@@ -10,6 +10,7 @@ from crosscompute_macros.disk import (
     is_existing_path,
     is_file_path,
     is_folder_path,
+    is_in_folder,
     is_link_path,
     list_paths)
 from crosscompute_macros.iterable import (
@@ -268,9 +269,7 @@ async def validate_paths(d):
                 path = folder / v
             except TypeError:
                 raise CrossComputeConfigurationError(f'"{k}" must be a string')
-            try:
-                path.resolve().relative_to(folder)
-            except ValueError:
+            if not is_in_folder(path, folder):
                 raise CrossComputeConfigurationError(
                     f'path "{v}" must be within '
                     f'folder "{redact_path(folder)}"')
