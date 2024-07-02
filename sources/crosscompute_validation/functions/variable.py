@@ -1,5 +1,6 @@
 import json
 from logging import getLogger
+from os.path import splitext
 
 from crosscompute_macros.disk import (
     FileCache,
@@ -11,8 +12,8 @@ from crosscompute_macros.package import import_attribute
 from importlib_metadata import entry_points
 
 from ..constants import (
-    MAXIMUM_RAW_DATA_BYTE_COUNT,
-    MAXIMUM_RAW_DATA_CACHE_LENGTH)
+    RAW_DATA_BYTE_COUNT,
+    RAW_DATA_CACHE_LENGTH)
 from ..errors import (
     CrossComputeDataError)
 from ..settings import (
@@ -66,7 +67,8 @@ async def load_variable_data(path, variable):
     except CrossComputeDataError as e:
         e.variable_id = variable_id
         raise
-    if path.suffix == '.dictionary':
+    suffix = splitext(path)[1]
+    if suffix == '.dictionary':
         raw_value = raw_data['value']
         try:
             variable_value = raw_value[variable_id]
@@ -86,7 +88,7 @@ async def load_variable_data(path, variable):
 async def load_raw_data(path):
     if not await is_existing_path(path):
         raise CrossComputeDataError(f'path "{path}" does not exist')
-    suffix = path.suffix
+    suffix = splitext(path)[1]
     if suffix == '.dictionary':
         return await load_dictionary_data(path)
     if suffix in ['.md', '.txt']:
@@ -109,7 +111,7 @@ async def load_dictionary_data(path):
 async def load_text_data(path):
     try:
         byte_count = await get_byte_count(path)
-        if byte_count > MAXIMUM_RAW_DATA_BYTE_COUNT:
+        if byte_count > RAW_DATA_BYTE_COUNT:
             return {'path': path}
         value = await load_raw_text(path)
     except OSError as e:
@@ -118,6 +120,6 @@ async def load_text_data(path):
 
 
 raw_data_cache = FileCache(
-    load_data=load_raw_data,
-    maximum_length=MAXIMUM_RAW_DATA_CACHE_LENGTH)
+    load=load_raw_data,
+    length=RAW_DATA_CACHE_LENGTH)
 L = getLogger(__name__)

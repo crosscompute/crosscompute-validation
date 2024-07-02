@@ -17,8 +17,8 @@ STEP_NAMES = 'input', 'output', 'log', 'debug', 'print'
 VARIABLE_ID_TEMPLATE_PATTERN = re.compile(r'{ *([a-zA-Z0-9_| ]+?) *}')
 
 
-MAXIMUM_RAW_DATA_BYTE_COUNT = 1024
-MAXIMUM_RAW_DATA_CACHE_LENGTH = 256
+RAW_DATA_BYTE_COUNT = 1024
+RAW_DATA_CACHE_LENGTH = 256
 
 
 SCRIPT_LANGUAGE = 'python'
