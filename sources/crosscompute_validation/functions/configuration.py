@@ -7,12 +7,14 @@ from pathlib import Path
 
 from aiofiles import open
 from crosscompute_macros.disk import (
+    assert_path_is_in_folder,
     is_existing_path,
     is_file_path,
     is_folder_path,
-    is_in_folder,
     is_link_path,
     list_paths)
+from crosscompute_macros.error import (
+    DiskError)
 from crosscompute_macros.iterable import (
     apply_functions,
     find_item)
@@ -253,10 +255,21 @@ async def load_raw_configuration_yaml(configuration_path, with_comments=False):
 
 async def validate_paths(d):
     packs = list(d.items())
-    folder = d.absolute_folder
+    folder = Path(d.absolute_folder)
     while packs:
         k, v = packs.pop()
-        if isinstance(v, dict):
+        if k in ['path', 'folder']:
+            try:
+                path = folder / v
+            except TypeError:
+                raise CrossComputeConfigurationError(f'"{k}" must be a string')
+            try:
+                await assert_path_is_in_folder(path, folder)
+            except DiskError as e:
+                raise CrossComputeConfigurationError(
+                    f'path "{v}" must be within '
+                    f'folder "{redact_path(folder)}"; {e}')
+        elif isinstance(v, dict):
             packs.extend(v.items())
         elif isinstance(v, list):
             for x in v:
@@ -264,15 +277,6 @@ async def validate_paths(d):
                     packs.extend(x.items())
                 except AttributeError:
                     pass
-        elif k in ['path', 'folder']:
-            try:
-                path = folder / v
-            except TypeError:
-                raise CrossComputeConfigurationError(f'"{k}" must be a string')
-            if not is_in_folder(path, folder):
-                raise CrossComputeConfigurationError(
-                    f'path "{v}" must be within '
-                    f'folder "{redact_path(folder)}"')
     return {}
 
 
