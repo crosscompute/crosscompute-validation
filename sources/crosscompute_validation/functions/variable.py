@@ -61,6 +61,7 @@ async def load_variable_data_by_id(folder, variables):
 
 
 async def load_variable_data(path, variable):
+    # TODO: Load variable_configuration
     variable_id = variable.id
     try:
         raw_data = await raw_data_cache.get(path)
@@ -69,19 +70,18 @@ async def load_variable_data(path, variable):
         raise
     suffix = splitext(path)[1]
     if suffix == '.dictionary':
-        raw_value = raw_data['value']
+        raw_value = raw_data['v']
         try:
             variable_value = raw_value[variable_id]
         except KeyError:
             raise CrossComputeDataError(
                 'value was not found', variable_id=variable_id, path=path)
-        variable_data = {'value': variable_value}
+        variable_data = {'v': variable_value}
     else:
         variable_data = raw_data
-    if 'value' in variable_data:
+    if 'v' in variable_data:
         variable_view = LoadableVariableView.get_from(variable)
-        variable_data['value'] = await variable_view.parse(variable_data[
-            'value'])
+        variable_data['v'] = await variable_view.parse(variable_data['v'])
     return variable_data
 
 
@@ -93,7 +93,7 @@ async def load_raw_data(path):
         return await load_dictionary_data(path)
     if suffix in ['.md', '.txt']:
         return await load_text_data(path)
-    return {'path': path}
+    return {'p': path}
 
 
 async def load_dictionary_data(path):
@@ -105,18 +105,18 @@ async def load_dictionary_data(path):
         raise CrossComputeDataError(f'json expected; {e}', path=path)
     if not isinstance(value, dict):
         raise CrossComputeDataError('dictionary expected', path=path)
-    return {'value': value}
+    return {'v': value}
 
 
 async def load_text_data(path):
     try:
         byte_count = await get_byte_count(path)
         if byte_count > RAW_DATA_BYTE_COUNT:
-            return {'path': path}
+            return {'/': path}
         value = await load_raw_text(path)
     except OSError as e:
         raise CrossComputeDataError(e, path=path)
-    return {'value': value}
+    return {'v': value}
 
 
 raw_data_cache = FileCache(
