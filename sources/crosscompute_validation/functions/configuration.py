@@ -428,13 +428,13 @@ async def validate_preset_configuration(d):
         input_variable_definitions = tool_definition.get_variable_definitions(
             'input')
         async for _ in yield_data_by_id(path, input_variable_definitions):
-            data = {'input': reference_data_by_id | _ | preset_configuration}
+            data = {'i': reference_data_by_id | _ | preset_configuration}
             preset_definition = await PresetDefinition.load(
                 d, tool_definition=tool_definition, data=data)
             preset_definitions.extend(preset_definition.preset_definitions)
     else:
         data_by_id = reference_data_by_id | preset_configuration
-        d.data['input'] = d.data.get('input', {}) | data_by_id
+        d.data['i'] = d.data.get('i', {}) | data_by_id
         preset_definitions.append(d)
     return {'preset_definitions': preset_definitions}
 
@@ -604,7 +604,7 @@ async def yield_data_by_id_from_csv(path, variable_definitions):
             csv_reader = csv.reader(lines)
             keys = [_.strip() for _ in next(csv_reader)]
             for values in csv_reader:
-                data_by_id = {k: {'value': v} for k, v in zip(keys, values)}
+                data_by_id = {k: {'v': v} for k, v in zip(keys, values)}
                 data_by_id = await parse_data_by_id(
                     data_by_id, variable_definitions)
                 if data_by_id.get('#') == '#':
@@ -634,7 +634,7 @@ async def yield_data_by_id_from_txt(path, variable_definitions):
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
-                data_by_id = {variable_id: {'value': line}}
+                data_by_id = {variable_id: {'v': line}}
                 yield parse_data_by_id(data_by_id, variable_definitions)
     except OSError as e:
         raise CrossComputeConfigurationError(e)
@@ -647,16 +647,16 @@ async def parse_data_by_id(data_by_id, variable_definitions):
             variable_data = data_by_id[variable_id]
         except KeyError:
             continue
-        if 'value' not in variable_data:
+        if 'v' not in variable_data:
             continue
-        variable_value = variable_data['value']
+        variable_value = variable_data['v']
         variable_view = LoadableVariableView.get_from(variable_definition)
         try:
             variable_value = await variable_view.parse(variable_value)
         except CrossComputeDataError as e:
             e.variable_id = variable_id
             raise
-        variable_data['value'] = variable_value
+        variable_data['v'] = variable_value
     return data_by_id
 
 
@@ -753,7 +753,7 @@ def format_text(text, data_by_id):
             raise CrossComputeConfigurationError(
                 f'preset "{text}" missing value',
                 variable_id=variable_id)
-        value = variable_data.get('value', '')
+        value = variable_data.get('v', '')
         try:
             value = apply_functions(value, terms[1:], {
                 'slug': format_slug,
