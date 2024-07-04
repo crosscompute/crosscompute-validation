@@ -112,7 +112,7 @@ async def load_text_data(path):
     try:
         byte_count = await get_byte_count(path)
         if byte_count > RAW_DATA_BYTE_COUNT:
-            return {'/': path}
+            return {'p': path}
         value = await load_raw_text(path)
     except OSError as e:
         raise CrossComputeDataError(e, path=path)
