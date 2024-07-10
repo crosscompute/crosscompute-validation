@@ -12,6 +12,8 @@ from crosscompute_macros.package import import_attribute
 from importlib_metadata import entry_points
 
 from ..constants import (
+    D_PATH,
+    D_VALUE,
     RAW_DATA_BYTE_COUNT,
     RAW_DATA_CACHE_LENGTH)
 from ..errors import (
@@ -70,18 +72,19 @@ async def load_variable_data(path, variable):
         raise
     suffix = splitext(path)[1]
     if suffix == '.dictionary':
-        raw_value = raw_data['v']
+        raw_value = raw_data[D_VALUE]
         try:
             variable_value = raw_value[variable_id]
         except KeyError:
             raise CrossComputeDataError(
                 'value was not found', variable_id=variable_id, path=path)
-        variable_data = {'v': variable_value}
+        variable_data = {D_VALUE: variable_value}
     else:
         variable_data = raw_data
-    if 'v' in variable_data:
+    if D_VALUE in variable_data:
         variable_view = LoadableVariableView.get_from(variable)
-        variable_data['v'] = await variable_view.parse(variable_data['v'])
+        variable_data[D_VALUE] = await variable_view.parse(variable_data[
+            D_VALUE])
     return variable_data
 
 
@@ -93,7 +96,7 @@ async def load_raw_data(path):
         return await load_dictionary_data(path)
     if suffix in ['.md', '.txt']:
         return await load_text_data(path)
-    return {'p': path}
+    return {D_PATH: path}
 
 
 async def load_dictionary_data(path):
@@ -105,18 +108,18 @@ async def load_dictionary_data(path):
         raise CrossComputeDataError(f'json expected; {e}', path=path)
     if not isinstance(value, dict):
         raise CrossComputeDataError('dictionary expected', path=path)
-    return {'v': value}
+    return {D_VALUE: value}
 
 
 async def load_text_data(path):
     try:
         byte_count = await get_byte_count(path)
         if byte_count > RAW_DATA_BYTE_COUNT:
-            return {'p': path}
+            return {D_PATH: path}
         value = await load_raw_text(path)
     except OSError as e:
         raise CrossComputeDataError(e, path=path)
-    return {'v': value}
+    return {D_VALUE: value}
 
 
 raw_data_cache = FileCache(
