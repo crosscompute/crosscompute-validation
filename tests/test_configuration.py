@@ -8,7 +8,8 @@ from crosscompute_validation.errors import (
     CrossComputeConfigurationError)
 from crosscompute_validation.functions.configuration import (
     Definition,
-    validate_paths)
+    validate_paths,
+    validate_steps)
 
 
 @mark.asyncio
@@ -34,3 +35,19 @@ async def test_validate_paths(tmpdir):
     async with open(tmpdir / 'a', 'wt') as f:
         await f.write('A')
     await validate_paths(definition)
+
+
+@mark.asyncio
+async def test_validate_steps():
+    with raises(CrossComputeConfigurationError):
+        await validate_steps({
+            'input': {
+                'variables': [
+                    {'id': 'a', 'view': 'string', 'path': 'a.txt'},
+                ],
+            }, 'output': {
+                'variables': [
+                    {'id': 'a', 'view': 'string', 'path': 'a.txt'},
+                ],
+            },
+        })

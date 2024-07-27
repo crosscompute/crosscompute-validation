@@ -1,5 +1,6 @@
 import csv
 from collections import Counter
+from itertools import chain
 from logging import getLogger
 from os import environ
 from os.path import basename
@@ -321,6 +322,9 @@ async def validate_steps(d):
         step_definition = await StepDefinition.load(
             step_dictionary, name=step_name)
         step_definition_by_name[step_name] = step_definition
+    assert_unique_values([v.id for v in chain(*(
+        _.variable_definitions for _ in step_definition_by_name.values()
+    ))], 'variable id "{x}"')
     return {'step_definition_by_name': step_definition_by_name}
 
 
