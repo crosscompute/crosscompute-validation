@@ -27,6 +27,9 @@ from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
 from ..constants import (
+    ATTRIBUTION_TEXT,
+    ATTRIBUTION_URI_AND_IMAGE_TEXT,
+    ATTRIBUTION_URI_TEXT,
     CONFIGURATION_NAME,
     D_VALUE,
     ENGINE_NAME,
@@ -87,6 +90,7 @@ class ToolDefinition(Definition):
         self._validation_functions.extend([
             validate_paths,
             validate_tool_identifiers,
+            validate_copyright,
             validate_tools,
             validate_steps,
             validate_presets,
@@ -99,6 +103,13 @@ class ToolDefinition(Definition):
         if step_name not in d:
             return []
         return d[step_name].variable_definitions
+
+
+class CopyrightDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self._validation_functions.extend([
+            validate_copyright_identifiers])
 
 
 class StepDefinition(Definition):
@@ -292,6 +303,12 @@ async def validate_tool_identifiers(d):
     return {'name': name, 'slug': slug, 'version': version}
 
 
+async def validate_copyright(d):
+    copyright_dictionary = get_dictionary(d, 'copyright')
+    copyright_definition = await CopyrightDefinition.load(copyright_dictionary)
+    return {'copyright_definition': copyright_definition}
+
+
 async def validate_tools(d):
     tool_definitions = [d] if 'output' in d else []
     tool_dictionaries = get_dictionaries(d, 'tools')
@@ -365,6 +382,31 @@ async def validate_environment(d):
     environment_definition = await EnvironmentDefinition.load(
         environment_dictionary, tool_definition=d)
     return {'environment_definition': environment_definition}
+
+
+async def validate_copyright_identifiers(d):
+    copyright_name = d.get('name')
+    copyright_year = d.get('year')
+    copyright_image_uri = d.get('image_uri')
+    copyright_owner_uri = d.get('owner_uri')
+    if 'text' in d:
+        attribution_text = d.get('text')
+    elif copyright_name and copyright_year:
+        if copyright_owner_uri:
+            if copyright_image_uri:
+                attribution_text = ATTRIBUTION_URI_AND_IMAGE_TEXT
+            else:
+                attribution_text = ATTRIBUTION_URI_TEXT
+        else:
+            attribution_text = ATTRIBUTION_TEXT
+    else:
+        attribution_text = ''
+    try:
+        attribution_text = attribution_text.format(**d)
+    except KeyError as e:
+        raise CrossComputeConfigurationError(
+            f'copyright "{e}" is specified in text but undefined')
+    return {'text': attribution_text}
 
 
 async def validate_step_variables(d):

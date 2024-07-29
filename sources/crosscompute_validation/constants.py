@@ -14,6 +14,14 @@ TOOL_VERSION = '0.0.0'
 STEP_NAMES = 'input', 'output', 'log', 'debug', 'print'
 
 
+ATTRIBUTION_URI_AND_IMAGE_TEXT = '''\
+[<img src="{image_uri}" alt="{name}" loading="lazy">]({owner_uri}) © {year}'''
+ATTRIBUTION_URI_TEXT = '''\
+[{name}]({owner_uri}) © {year}'''
+ATTRIBUTION_TEXT = '''\
+{name} © {year}'''
+
+
 VARIABLE_ID_TEMPLATE_PATTERN = re.compile(r'{ *([a-zA-Z0-9_| ]+?) *}')
 
 

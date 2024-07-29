@@ -4,10 +4,16 @@ from pytest import mark, raises
 from crosscompute_macros.disk import (
     make_link,
     remove_path)
+
+from crosscompute_validation.constants import (
+    ATTRIBUTION_TEXT,
+    ATTRIBUTION_URI_AND_IMAGE_TEXT,
+    ATTRIBUTION_URI_TEXT)
 from crosscompute_validation.errors import (
     CrossComputeConfigurationError)
 from crosscompute_validation.functions.configuration import (
     Definition,
+    validate_copyright_identifiers,
     validate_paths,
     validate_steps)
 
@@ -35,6 +41,28 @@ async def test_validate_paths(tmpdir):
     async with open(tmpdir / 'a', 'wt') as f:
         await f.write('A')
     await validate_paths(definition)
+
+
+@mark.asyncio
+async def test_validate_copyright_identifiers():
+    async def f(copyright_dictionary, attribution_text):
+        d = await validate_copyright_identifiers(copyright_dictionary)
+        assert d['text'] == attribution_text.format(**copyright_dictionary)
+    copyright_text = '{name} {year} {owner_uri} {image_uri}'
+    with raises(CrossComputeConfigurationError):
+        await validate_copyright_identifiers({'text': copyright_text})
+    copyright_dictionary = {
+        'name': 'X', 'year': 1, 'owner_uri': 'https://example.com',
+        'image_uri': 'https://example.com/image.svg', 'text': copyright_text}
+    await f(copyright_dictionary, copyright_text)
+    del copyright_dictionary['text']
+    await f(copyright_dictionary, ATTRIBUTION_URI_AND_IMAGE_TEXT)
+    del copyright_dictionary['image_uri']
+    await f(copyright_dictionary, ATTRIBUTION_URI_TEXT)
+    del copyright_dictionary['owner_uri']
+    await f(copyright_dictionary, ATTRIBUTION_TEXT)
+    del copyright_dictionary['year']
+    await f(copyright_dictionary, '')
 
 
 @mark.asyncio
