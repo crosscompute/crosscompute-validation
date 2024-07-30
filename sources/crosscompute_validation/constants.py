@@ -38,6 +38,7 @@ PACKAGE_MANAGER_NAMES = 'dnf', 'apt', 'pip', 'npm'
 SUPPORT_EMAIL = 'support@crosscompute.com'
 
 
+# Step
 S_INPUT = 'i'
 S_OUTPUT = 'o'
 S_LOG = 'l'
@@ -45,6 +46,7 @@ S_DEBUG = 'd'
 S_PRINT = 'p'
 
 
+# Data
 D_VALUE = 'v'
 D_PATH = 'p'
 D_URI = 'u'
