@@ -98,6 +98,19 @@ class ToolDefinition(Definition):
             validate_scripts,
             validate_environment])
 
+    async def load_data_by_id(self, result_folder, step_name, with_exception):
+        variable_definitions = self.get_variable_definitions(step_name)
+        tool_folder = self.absolute_folder
+        step_folder = tool_folder / result_folder / step_name
+        try:
+            data_by_id = await load_variable_data_by_id(
+                step_folder, variable_definitions)
+        except CrossComputeDataError:
+            if with_exception:
+                raise
+            data_by_id = {}
+        return data_by_id
+
     def get_variable_definitions(self, step_name):
         d = self.step_definition_by_name
         if step_name not in d:
@@ -446,13 +459,8 @@ async def validate_preset_identifiers(d):
 async def validate_preset_reference(d):
     preset_reference = get_dictionary(d, 'reference')
     if 'folder' in preset_reference:
-        tool_definition = d.tool_definition
-        tool_folder = tool_definition.absolute_folder
-        input_variable_definitions = tool_definition.get_variable_definitions(
-            'input')
-        reference_data_by_id = await load_variable_data_by_id(
-            tool_folder / preset_reference['folder'] / 'input',
-            input_variable_definitions)
+        reference_data_by_id = await d.tool_definition.load_data_by_id(
+            preset_reference['folder'], 'input', with_exception=True)
     else:
         reference_data_by_id = {}
     return {'__reference_data_by_id': reference_data_by_id}
@@ -464,8 +472,8 @@ async def validate_preset_configuration(d):
     preset_configuration = preset_dictionary.pop('configuration', {})
     reference_data_by_id = d.__reference_data_by_id
     tool_definition = d.tool_definition
+    tool_folder = tool_definition.absolute_folder
     if 'path' in preset_configuration:
-        tool_folder = tool_definition.absolute_folder
         path = tool_folder / preset_configuration.pop('path')
         suffix = path.suffix
         try:
@@ -481,8 +489,10 @@ async def validate_preset_configuration(d):
                 d, tool_definition=tool_definition, data=data)
             preset_definitions.extend(preset_definition.preset_definitions)
     else:
-        data_by_id = reference_data_by_id | preset_configuration
-        d.data[S_INPUT] = d.data.get(S_INPUT, {}) | data_by_id
+        data_by_id = await tool_definition.load_data_by_id(
+            d.folder_name, 'input', with_exception=False)
+        d.data[S_INPUT] = d.data.get(S_INPUT, {
+        }) | reference_data_by_id | preset_configuration | data_by_id
         preset_definitions.append(d)
     return {'preset_definitions': preset_definitions}
 
@@ -590,8 +600,8 @@ async def validate_environment_variables(d):
     for variable_dictionary in variable_dictionaries:
         variable_id = variable_dictionary['id']
         if variable_id not in environ:
-            L.error('environment is missing variable "%s"', variable_id)
-        variable_definition = VariableDefinition()
+            L.error('tool environment is missing variable "%s"', variable_id)
+        variable_definition = VariableDefinition(variable_dictionary)
         variable_definition.id = variable_id
         variable_definitions.append(variable_definition)
     assert_unique_values([

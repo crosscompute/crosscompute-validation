@@ -58,7 +58,7 @@ async def load_variable_data_by_id(folder, variables):
     data_by_id = {}
     for variable in variables:
         data_by_id[variable.id] = await load_variable_data(
-            folder / variable.path_string, variable)
+            folder / variable.path_name, variable)
     return data_by_id
 
 
