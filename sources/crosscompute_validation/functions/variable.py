@@ -45,6 +45,20 @@ class LoadableVariableView:
         return data
 
 
+class LoadableNumberView(LoadableVariableView):
+
+    async def parse(self, value):
+        try:
+            value = float(value)
+        except ValueError:
+            raise CrossComputeDataError(
+                f'value "{value}" is not a number',
+                variable_id=self.variable.id)
+        if value.is_integer():
+            value = int(value)
+        return value
+
+
 def initialize_view_by_name(d=None, with_entry_points=False):
     if with_entry_points:
         for entry_point in entry_points().select(group='crosscompute.views'):

@@ -28,7 +28,7 @@ classifiers = [
 
 [project.optional-dependencies]
 development = ["pre-commit"]
-test = ["pytest-asyncio", "pytest-cov", "pytest-xdist"]
+test = ["aiofiles", "pytest-asyncio", "pytest-cov", "pytest-xdist"]
 
 [project.urls]
 # Homepage = ""
