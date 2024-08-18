@@ -1,6 +1,5 @@
 import csv
 from collections import Counter
-from itertools import chain
 from logging import getLogger
 from os import environ
 from os.path import basename
@@ -223,6 +222,7 @@ async def load_configuration_from_path(path, locus):
         if not hasattr(e, 'path'):
             e.path = path
         raise
+    L.debug('"%s" loaded', redact_path(path))
     return c
 
 
@@ -345,6 +345,7 @@ async def validate_tools(d):
 
 async def validate_steps(d):
     step_definition_by_name = {}
+    tool_variable_ids = []
     for step_name in STEP_NAMES:
         if step_name not in d:
             continue
@@ -352,9 +353,12 @@ async def validate_steps(d):
         step_definition = await StepDefinition.load(
             step_dictionary, name=step_name)
         step_definition_by_name[step_name] = step_definition
-    assert_unique_values([v.id for v in chain(*(
-        _.variable_definitions for _ in step_definition_by_name.values()
-    ))], 'variable id "{x}"')
+        variable_ids = [_.id for _ in step_definition.variable_definitions]
+        assert_unique_values(variable_ids, 'variable id "{x}"')
+        tool_variable_ids.extend(variable_ids)
+    if 'return_code' in tool_variable_ids:
+        raise CrossComputeConfigurationError(
+            '"return_code" is a reserved variable')
     return {'step_definition_by_name': step_definition_by_name}
 
 
