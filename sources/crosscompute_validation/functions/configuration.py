@@ -97,17 +97,12 @@ class ToolDefinition(Definition):
             validate_scripts,
             validate_environment])
 
-    async def load_data_by_id(self, result_folder, step_name, with_exception):
+    async def load_data_by_id(self, result_folder, step_name):
         variable_definitions = self.get_variable_definitions(step_name)
         tool_folder = self.absolute_folder
         step_folder = tool_folder / result_folder / step_name
-        try:
-            data_by_id = await load_variable_data_by_id(
-                step_folder, variable_definitions)
-        except CrossComputeDataError:
-            if with_exception:
-                raise
-            data_by_id = {}
+        data_by_id = await load_variable_data_by_id(
+            step_folder, variable_definitions)
         return data_by_id
 
     def get_variable_definitions(self, step_name):
@@ -464,7 +459,7 @@ async def validate_preset_reference(d):
     preset_reference = get_dictionary(d, 'reference')
     if 'folder' in preset_reference:
         reference_data_by_id = await d.tool_definition.load_data_by_id(
-            preset_reference['folder'], 'input', with_exception=True)
+            preset_reference['folder'], 'input')
     else:
         reference_data_by_id = {}
     return {'__reference_data_by_id': reference_data_by_id}
@@ -494,7 +489,7 @@ async def validate_preset_configuration(d):
             preset_definitions.extend(preset_definition.preset_definitions)
     else:
         data_by_id = await tool_definition.load_data_by_id(
-            d.folder_name, 'input', with_exception=False)
+            d.folder_name, 'input')
         d.data[S_INPUT] = d.data.get(S_INPUT, {
         }) | reference_data_by_id | preset_configuration | data_by_id
         preset_definitions.append(d)

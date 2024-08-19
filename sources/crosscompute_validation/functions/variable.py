@@ -71,14 +71,19 @@ def initialize_view_by_name(d=None, with_entry_points=False):
 async def load_variable_data_by_id(folder, variables):
     data_by_id = {}
     for variable in variables:
+        path_name = variable.path_name
+        if path_name == 'ENVIRONMENT':
+            continue
         data_by_id[variable.id] = await load_variable_data(
-            folder / variable.path_name, variable)
+            folder / path_name, variable)
     return data_by_id
 
 
 async def load_variable_data(path, variable):
     # TODO: Load variable_configuration
     variable_id = variable.id
+    # TODO: attempt to specify path for view=file if paths exist
+    # TODO: respect index and suffix
     try:
         raw_data = await raw_data_cache.get(path)
     except CrossComputeDataError as e:
@@ -93,6 +98,7 @@ async def load_variable_data(path, variable):
             raise CrossComputeDataError(
                 'value was not found', variable_id=variable_id, path=path)
         variable_data = {D_VALUE: variable_value}
+    # TODO: if path in raw_data, upload the files and replace path with uri
     else:
         variable_data = raw_data
     if D_VALUE in variable_data:
