@@ -5,7 +5,6 @@ from os.path import splitext
 from crosscompute_macros.disk import (
     FileCache,
     get_byte_count,
-    is_existing_path,
     load_raw_json,
     load_raw_text)
 from crosscompute_macros.package import import_attribute
@@ -20,6 +19,8 @@ from ..errors import (
     CrossComputeDataError)
 from ..settings import (
     view_by_name)
+from .disk import (
+    get_matching_paths)
 
 
 class LoadableVariableView:
@@ -82,8 +83,6 @@ async def load_variable_data_by_id(folder, variables):
 async def load_variable_data(path, variable):
     # TODO: Load variable_configuration
     variable_id = variable.id
-    # TODO: attempt to specify path for view=file if paths exist
-    # TODO: respect index and suffix
     try:
         raw_data = await raw_data_cache.get(path)
     except CrossComputeDataError as e:
@@ -98,7 +97,6 @@ async def load_variable_data(path, variable):
             raise CrossComputeDataError(
                 'value was not found', variable_id=variable_id, path=path)
         variable_data = {D_VALUE: variable_value}
-    # TODO: if path in raw_data, upload the files and replace path with uri
     else:
         variable_data = raw_data
     if D_VALUE in variable_data:
@@ -109,8 +107,14 @@ async def load_variable_data(path, variable):
 
 
 async def load_raw_data(path):
-    if not await is_existing_path(path):
-        raise CrossComputeDataError(f'path "{path}" does not exist')
+    matching_paths = await get_matching_paths(path)
+    match len(matching_paths):
+        case 0:
+            raise CrossComputeDataError('path does not exist', path=path)
+        case 1:
+            path = matching_paths[0]
+        case _:
+            return {D_PATH: path}
     suffix = splitext(path)[1]
     if suffix == '.dictionary':
         return await load_dictionary_data(path)
