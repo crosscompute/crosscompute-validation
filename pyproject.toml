@@ -7,6 +7,7 @@ name = "crosscompute-validation"
 version = "1.0.0"
 dependencies = [
     "aiofiles",
+    # "crosscompute-macros",
     "ruamel.yaml",
 ]
 requires-python = ">= 3.10"
@@ -28,7 +29,7 @@ classifiers = [
 
 [project.optional-dependencies]
 development = ["pre-commit"]
-test = ["aiofiles", "pytest-asyncio", "pytest-cov", "pytest-xdist"]
+test = ["pytest-asyncio", "pytest-cov", "pytest-xdist"]
 
 [project.urls]
 # Homepage = ""

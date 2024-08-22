@@ -1,4 +1,5 @@
 import json
+from importlib.metadata import entry_points
 from logging import getLogger
 from os.path import splitext
 
@@ -8,7 +9,6 @@ from crosscompute_macros.disk import (
     load_raw_json,
     load_raw_text)
 from crosscompute_macros.package import import_attribute
-from importlib_metadata import entry_points
 
 from ..constants import (
     D_PATH,
