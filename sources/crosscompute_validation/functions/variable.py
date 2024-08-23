@@ -119,7 +119,9 @@ async def load_raw_data(path):
     if suffix == '.dictionary':
         return await load_dictionary_data(path)
     if suffix in ['.md', '.txt']:
-        return await load_text_data(path)
+        return await load_file_data(path, load_raw_text)
+    if suffix in ['.geojson', '.json']:
+        return await load_file_data(path, load_raw_json)
     return {D_PATH: path}
 
 
@@ -135,12 +137,12 @@ async def load_dictionary_data(path):
     return {D_VALUE: value}
 
 
-async def load_text_data(path):
+async def load_file_data(path, load):
     try:
         byte_count = await get_byte_count(path)
         if byte_count > RAW_DATA_BYTE_COUNT:
             return {D_PATH: path}
-        value = await load_raw_text(path)
+        value = await load(path)
     except OSError as e:
         raise CrossComputeDataError(e, path=path)
     return {D_VALUE: value}
