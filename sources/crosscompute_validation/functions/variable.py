@@ -8,7 +8,8 @@ from crosscompute_macros.disk import (
     get_byte_count,
     load_raw_json,
     load_raw_text)
-from crosscompute_macros.package import import_attribute
+from crosscompute_macros.package import (
+    import_attribute)
 
 from ..constants import (
     D_PATH,
@@ -75,8 +76,13 @@ async def load_variable_data_by_id(folder, variables):
         path_name = variable.path_name
         if path_name == 'ENVIRONMENT':
             continue
-        data_by_id[variable.id] = await load_variable_data(
-            folder / path_name, variable)
+        try:
+            variable_data = await load_variable_data(
+                folder / path_name, variable)
+        except CrossComputeDataError as e:
+            L.debug(e)
+            continue
+        data_by_id[variable.id] = variable_data
     return data_by_id
 
 
