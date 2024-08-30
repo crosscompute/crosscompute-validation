@@ -14,11 +14,11 @@ TOOL_VERSION = '0.0.0'
 STEP_NAMES = 'input', 'output', 'log', 'debug', 'print'
 
 
-ATTRIBUTION_URI_AND_IMAGE_TEXT = '''\
+COPYRIGHT_URI_AND_IMAGE_TEXT = '''\
 [<img src="{image_uri}" alt="{name}" loading="lazy">]({owner_uri}) © {year}'''
-ATTRIBUTION_URI_TEXT = '''\
+COPYRIGHT_URI_TEXT = '''\
 [{name}]({owner_uri}) © {year}'''
-ATTRIBUTION_TEXT = '''\
+COPYRIGHT_TEXT = '''\
 {name} © {year}'''
 
 

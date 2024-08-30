@@ -26,10 +26,10 @@ from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
 from ..constants import (
-    ATTRIBUTION_TEXT,
-    ATTRIBUTION_URI_AND_IMAGE_TEXT,
-    ATTRIBUTION_URI_TEXT,
     CONFIGURATION_NAME,
+    COPYRIGHT_TEXT,
+    COPYRIGHT_URI_AND_IMAGE_TEXT,
+    COPYRIGHT_URI_TEXT,
     D_VALUE,
     ENGINE_NAME,
     ERROR_CONFIGURATION_NOT_FOUND,
@@ -402,23 +402,27 @@ async def validate_copyright_identifiers(d):
     copyright_image_uri = d.get('image_uri')
     copyright_owner_uri = d.get('owner_uri')
     if 'text' in d:
-        attribution_text = d.get('text')
+        copyright_text = d.get('text')
     elif copyright_name and copyright_year:
         if copyright_owner_uri:
             if copyright_image_uri:
-                attribution_text = ATTRIBUTION_URI_AND_IMAGE_TEXT
+                copyright_text = COPYRIGHT_URI_AND_IMAGE_TEXT
             else:
-                attribution_text = ATTRIBUTION_URI_TEXT
+                copyright_text = COPYRIGHT_URI_TEXT
         else:
-            attribution_text = ATTRIBUTION_TEXT
+            copyright_text = COPYRIGHT_TEXT
     else:
-        attribution_text = ''
+        copyright_text = ''
     try:
-        attribution_text = attribution_text.format(**d)
+        copyright_text = copyright_text.format(**d)
     except KeyError as e:
         raise CrossComputeConfigurationError(
             f'copyright "{e}" is specified in text but undefined')
-    return {'text': attribution_text}
+    copyright_text = copyright_text.strip()
+    if not copyright_text:
+        raise CrossComputeConfigurationError(
+            'copyright is required, either as text or name and year')
+    return {'text': copyright_text}
 
 
 async def validate_step_variables(d):
