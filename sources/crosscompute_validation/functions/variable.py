@@ -12,6 +12,7 @@ from crosscompute_macros.package import (
     import_attribute)
 
 from ..constants import (
+    D_CONFIGURATION,
     D_PATH,
     D_VALUE,
     RAW_DATA_BYTE_COUNT,
@@ -87,7 +88,6 @@ async def load_variable_data_by_id(folder, variables):
 
 
 async def load_variable_data(path, variable):
-    # TODO: Load variable_configuration
     variable_id = variable.id
     try:
         raw_data = await raw_data_cache.get(path)
@@ -96,20 +96,43 @@ async def load_variable_data(path, variable):
         raise
     suffix = splitext(path)[1]
     if suffix == '.dictionary':
-        raw_value = raw_data[D_VALUE]
+        variable_value_by_id = raw_data[D_VALUE]
         try:
-            variable_value = raw_value[variable_id]
+            variable_value = variable_value_by_id[variable_id]
         except KeyError:
             raise CrossComputeDataError(
                 'value was not found', variable_id=variable_id, path=path)
         variable_data = {D_VALUE: variable_value}
+        await restore_data_configuration(
+            variable_data, variable, variable_value_by_id)
     else:
         variable_data = raw_data
+        await restore_data_configuration(variable_data, variable, {})
     if D_VALUE in variable_data:
         variable_view = LoadableVariableView.get_from(variable)
         variable_data[D_VALUE] = await variable_view.parse(variable_data[
             D_VALUE])
     return variable_data
+
+
+async def restore_data_configuration(
+        variable_data, variable, variable_value_by_id):
+    variable_configuration = variable.configuration
+    if 'path' in variable_configuration:
+        path = variable_configuration['path']
+    elif variable_value_by_id:
+        key = variable.id + '.configuration'
+        if key in variable_value_by_id:
+            variable_data[D_CONFIGURATION] = variable_value_by_id[key]
+    else:
+        path = variable.path_name + '.configuration'
+    try:
+        # TODO: Resolve path using correct folder
+        variable_data[D_CONFIGURATION] = await load_raw_json(path)
+    except OSError:
+        pass
+    except json.JSONDecodeError as e:
+        L.error(f'path "redact_path(path)" is not valid json; {e}')
 
 
 async def load_raw_data(path):

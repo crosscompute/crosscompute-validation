@@ -173,7 +173,8 @@ class VariableDefinition(Definition):
 
     async def _initialize(self, **kwargs):
         self._validation_functions.extend([
-            validate_variable_identifiers])
+            validate_variable_identifiers,
+            validate_variable_configuration])
 
 
 class PackageDefinition(Definition):
@@ -626,6 +627,25 @@ async def validate_variable_identifiers(d):
         'path_name': variable_path}
 
 
+async def validate_variable_configuration(d):
+    # TODO: Validate configuration according to variable view
+    c = get_dictionary(d, 'configuration')
+    if 'path' in c:
+        p = c['path']
+        if not p.endswith('.json'):
+            raise CrossComputeConfigurationError(
+                f'variable configuration path "{p}" suffix must be ".json"')
+    if d.step_name == 'print':
+        variable_id = d.id
+        view_name = d.view_name
+        if view_name == 'link':
+            pass
+        else:
+            process_header_footer_options(variable_id, c)
+            process_page_number_options(variable_id, c)
+    return {'configuration': c}
+
+
 async def validate_package_identifiers(d):
     try:
         package_id = d['id']
@@ -760,6 +780,27 @@ def prepare_script_function(script_language, function_string):
                 f'message {SUPPORT_EMAIL} to request support for '
                 'more languages')
     return command_string, preparation_dictionary
+
+
+def process_header_footer_options(variable_id, print_configuration):
+    k = 'header-footer'
+    d = get_dictionary(print_configuration, k)
+    d['skip-first'] = bool(d.get('skip-first'))
+
+
+def process_page_number_options(variable_id, print_configuration):
+    k = 'page-number'
+    d = get_dictionary(print_configuration, k)
+    location = d.get('location')
+    if location and location not in ['header', 'footer']:
+        raise CrossComputeConfigurationError(
+            f'print variable "{variable_id}" configuration "{k}" '
+            f'location "{location}" is not supported')
+    alignment = d.get('alignment')
+    if alignment and alignment not in ['left', 'center', 'right']:
+        raise CrossComputeConfigurationError(
+            f'print variable "{variable_id}" configuration "{k}" '
+            f'alignment "{alignment}" is not supported')
 
 
 def get_dictionaries(d, k):
