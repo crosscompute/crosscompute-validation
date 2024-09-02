@@ -1,13 +1,16 @@
 import json
 from importlib.metadata import entry_points
 from logging import getLogger
-from os.path import splitext
+from os.path import join, splitext
 
 from crosscompute_macros.disk import (
     FileCache,
     get_byte_count,
+    is_existing_path,
     load_raw_json,
     load_raw_text)
+from crosscompute_macros.log import (
+    redact_path)
 from crosscompute_macros.package import (
     import_attribute)
 
@@ -78,8 +81,7 @@ async def load_variable_data_by_id(folder, variables):
         if path_name == 'ENVIRONMENT':
             continue
         try:
-            variable_data = await load_variable_data(
-                folder / path_name, variable)
+            variable_data = await load_variable_data(folder, variable)
         except CrossComputeDataError as e:
             L.debug(e)
             continue
@@ -87,54 +89,74 @@ async def load_variable_data_by_id(folder, variables):
     return data_by_id
 
 
-# TODO: Use folder
-async def load_variable_data(path, variable):
+async def load_variable_data(folder, variable, with_configuration_path=True):
+    variable_path = variable.path_name
+    path = join(folder, variable_path)
+    if '{index}' in variable_path:
+        return {D_PATH: path}
     variable_id = variable.id
     try:
         raw_data = await raw_data_cache.get(path)
     except CrossComputeDataError as e:
         e.variable_id = variable_id
         raise
-    suffix = splitext(path)[1]
-    if suffix == '.dictionary':
+    if path.endswith('.dictionary'):
         variable_value_by_id = raw_data[D_VALUE]
-        try:
-            variable_value = variable_value_by_id[variable_id]
-        except KeyError:
-            raise CrossComputeDataError(
-                'value was not found', variable_id=variable_id, path=path)
-        variable_data = {D_VALUE: variable_value}
+        variable_data = load_variable_data_from(
+            variable_value_by_id, variable_id)
         await restore_data_configuration(
-            variable_data, variable, variable_value_by_id)
-    else:
+            variable_data, folder, variable, variable_value_by_id,
+            with_configuration_path)
+    elif with_configuration_path:
         variable_data = raw_data
-        await restore_data_configuration(variable_data, variable, {})
+        await restore_data_configuration(
+            variable_data, folder, variable, {}, with_configuration_path)
+    else:
+        variable_data = {}
     if D_VALUE in variable_data:
-        variable_view = LoadableVariableView.get_from(variable)
-        variable_data[D_VALUE] = await variable_view.parse(variable_data[
-            D_VALUE])
+        variable_data[D_VALUE] = await LoadableVariableView.get_from(
+            variable).parse(variable_data[D_VALUE])
     return variable_data
 
 
-# TODO: use folder
-async def restore_data_configuration(
-        variable_data, variable, variable_value_by_id):
-    variable_configuration = variable.configuration
-    if 'path' in variable_configuration:
-        path = variable_configuration['path']
-    elif variable_value_by_id:
-        key = variable.id + '.configuration'
-        if key in variable_value_by_id:
-            variable_data[D_CONFIGURATION] = variable_value_by_id[key]
-    else:
-        path = variable.path_name + '.configuration'
+def load_variable_data_from(variable_value_by_id, variable_id):
     try:
-        # TODO: Resolve path using correct folder
-        variable_data[D_CONFIGURATION] = await load_raw_json(path)
-    except OSError:
-        pass
+        variable_value = variable_value_by_id[variable_id]
+    except KeyError:
+        raise CrossComputeDataError(
+            'value was not found', variable_id=variable_id)
+    return {D_VALUE: variable_value}
+
+
+async def restore_data_configuration(
+        variable_data, folder, variable, variable_value_by_id,
+        with_configuration_path):
+    variable_configuration = variable.configuration
+    data_configuration = {}
+    default_path = folder / (variable.path_name + '.configuration')
+    if variable_value_by_id:
+        variable_id = variable.id
+        v = variable_value_by_id.get(variable_id + '.configuration')
+        if isinstance(v, dict):
+            data_configuration.update(v)
+        else:
+            L.error(f'data configuration must be a dictionary; {variable_id=}')
+    elif with_configuration_path and await is_existing_path(default_path):
+        await update_data_configuration(data_configuration, default_path)
+    if 'path' in variable_configuration:
+        custom_path = folder / variable_configuration['path']
+        await update_data_configuration(data_configuration, custom_path)
+    if data_configuration:
+        variable_data[D_CONFIGURATION] = data_configuration
+
+
+async def update_data_configuration(data_configuration, path):
+    try:
+        data_configuration.update(await load_raw_json(path))
+    except OSError as e:
+        L.error(f'path "{redact_path(path)}" is not accessible; {e}')
     except json.JSONDecodeError as e:
-        L.error(f'path "redact_path(path)" is not valid json; {e}')
+        L.error(f'path "{redact_path(path)}" is not valid json; {e}')
 
 
 async def load_raw_data(path):

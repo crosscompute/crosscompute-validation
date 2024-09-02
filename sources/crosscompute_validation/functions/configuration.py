@@ -172,6 +172,7 @@ class EnvironmentDefinition(Definition):
 class VariableDefinition(Definition):
 
     async def _initialize(self, **kwargs):
+        self.step_name = kwargs['step_name']
         self._validation_functions.extend([
             validate_variable_identifiers,
             validate_variable_configuration])
@@ -429,7 +430,7 @@ async def validate_copyright_identifiers(d):
 async def validate_step_variables(d):
     variable_dictionaries = get_dictionaries(d, 'variables')
     variable_definitions = [await VariableDefinition.load(
-        _) for _ in variable_dictionaries]
+        _, step_name=d.name) for _ in variable_dictionaries]
     return {'variable_definitions': variable_definitions}
 
 
