@@ -87,6 +87,7 @@ async def load_variable_data_by_id(folder, variables):
     return data_by_id
 
 
+# TODO: Use folder
 async def load_variable_data(path, variable):
     variable_id = variable.id
     try:
@@ -115,6 +116,7 @@ async def load_variable_data(path, variable):
     return variable_data
 
 
+# TODO: use folder
 async def restore_data_configuration(
         variable_data, variable, variable_value_by_id):
     variable_configuration = variable.configuration
