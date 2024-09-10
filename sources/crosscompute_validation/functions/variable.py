@@ -133,10 +133,10 @@ async def restore_data_configuration(
         with_configuration_path):
     variable_configuration = variable.configuration
     data_configuration = {}
-    default_path = folder / (variable.path_name + '.configuration')
+    default_path = join(folder, variable.path_name + '.configuration')
     if variable_value_by_id:
         variable_id = variable.id
-        v = variable_value_by_id.get(variable_id + '.configuration')
+        v = variable_value_by_id.get(variable_id + '.configuration', {})
         if isinstance(v, dict):
             data_configuration.update(v)
         else:
@@ -144,7 +144,7 @@ async def restore_data_configuration(
     elif with_configuration_path and await is_existing_path(default_path):
         await update_data_configuration(data_configuration, default_path)
     if 'path' in variable_configuration:
-        custom_path = folder / variable_configuration['path']
+        custom_path = join(folder, variable_configuration['path'])
         await update_data_configuration(data_configuration, custom_path)
     if data_configuration:
         variable_data[D_CONFIGURATION] = data_configuration
