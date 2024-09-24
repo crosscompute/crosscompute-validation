@@ -507,7 +507,12 @@ async def validate_dataset_identifiers(d):
     if not dataset_path:
         raise CrossComputeConfigurationError(
             'path is required for each dataset')
-    return {'path': dataset_path}
+    dataset_slug = format_slug(d.get('slug', dataset_path.name))
+    dataset_lock = bool(d.get('lock'))
+    return {
+        'path': dataset_path,
+        'slug': dataset_slug,
+        'lock': dataset_lock}
 
 
 async def validate_dataset_reference(d):

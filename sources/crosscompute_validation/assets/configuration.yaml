@@ -343,6 +343,13 @@ datasets:
   - path: datasets/ghi.csv
     script:
       path: ghi.ipynb
+  # slug identifies a dataset on the server
+  # lock is true by default; set false if your script will change the dataset
+  - path: datasets/jkl.csv
+    slug: jkl
+    lock: false
+  # slug can also be omitted in which case the slug will be the file name
+  - path: datasets/mno.csv
 
 # scripts contain code that turn input variables into output variables
 scripts:
