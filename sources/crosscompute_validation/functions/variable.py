@@ -160,7 +160,10 @@ async def update_data_configuration(data_configuration, path):
 
 
 async def load_raw_data(path):
-    matching_paths = await get_matching_paths(path)
+    try:
+        matching_paths = await get_matching_paths(path)
+    except OSError:
+        raise CrossComputeDataError('path does not exist', path=path)
     match len(matching_paths):
         case 0:
             raise CrossComputeDataError('path does not exist', path=path)
