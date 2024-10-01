@@ -343,13 +343,19 @@ datasets:
   - path: datasets/ghi.csv
     script:
       path: ghi.ipynb
-  # slug identifies a dataset on the server
-  # lock is true by default; set false if your script will change the dataset
+  # slug identifies a dataset on the server;
+  # write replace means that the dataset will be downloaded and uploaded
   - path: datasets/jkl.csv
     slug: jkl
-    lock: false
-  # slug can also be omitted in which case the slug will be the file name
+    write: replace
+  # write append means the dataset will not be downloaded but will be appended
   - path: datasets/mno.csv
+    slug: mno
+    write: append
+  # slug can also be omitted in which case the slug will be the file name;
+  # write is none by default; the dataset will not be uploaded to the server;
+  # the dataset will be downloaded if a reference or script is not specified
+  - path: datasets/pqr.csv
 
 # scripts contain code that turn input variables into output variables
 scripts:
