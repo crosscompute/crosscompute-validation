@@ -145,9 +145,7 @@ class DatasetDefinition(Definition):
         self.tool_definition = kwargs['tool_definition']
         self._validation_functions.extend([
             validate_dataset_identifiers,
-            validate_dataset_reference,
-            # validate_dataset_script,
-        ])
+            validate_dataset_reference])
 
 
 class ScriptDefinition(Definition):
@@ -508,6 +506,10 @@ async def validate_dataset_identifiers(d):
         raise CrossComputeConfigurationError(
             'path is required for each dataset')
     dataset_slug = format_slug(d.get('slug', dataset_path.name))
+    dataset_read = d.get('read', 'none')
+    if dataset_read not in ['none', 'replace']:
+        raise CrossComputeConfigurationError(
+            f'dataset read "{dataset_read}" is not supported')
     dataset_write = d.get('write', 'none')
     if dataset_write not in ['none', 'append', 'replace']:
         raise CrossComputeConfigurationError(
@@ -515,6 +517,7 @@ async def validate_dataset_identifiers(d):
     return {
         'path': dataset_path,
         'slug': dataset_slug,
+        'read': dataset_read,
         'write': dataset_write}
 
 

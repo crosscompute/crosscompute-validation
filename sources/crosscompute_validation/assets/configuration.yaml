@@ -297,65 +297,64 @@ views:
 # tests verify that your tool works properly
 tests:
   # folder sets input variables and checks selected output variables
-  - folder: tests/standard
+  - folder: standard
 
 # presets are pre-defined sets of input variables
 presets:
   # folder sets values for input variables;
   # folder contains an input subfolder;
   # input subfolder contains files for the input variables
-  - folder: presets/standard
+  - folder: standard
   # configuration sets variable values, where each row is a separate preset
   # folder is the name of the folder saved to disk;
   # name is the preset name displayed online;
   # slug is the preset uri;
   # the above string templates can include variable ids and filters
-  - folder: presets/{x1 | slug}-{x2}
+  - folder: '{x1 | slug}-{x2}'
     name: '{x1 | title} {x2}'
     slug: '{x1 | slug}-{x2}'
     configuration:
-      path: datasets/presets.csv
+      path: presets.csv
   # reference folder sets variable values missing in the configuration path;
   # configuration sets variable values, where each row is a separate preset
-  - folder: presets/{x1 | slug}-{x2}
+  - folder: '{x1 | slug}-{x2}'
     name: '{x1 | title} {x2}'
     slug: '{x1 | slug}-{x2}'
     reference:
-      folder: presets/standard
+      folder: standard
     configuration:
-      path: datasets/presets.csv
+      path: presets.csv
 
 # datasets are files that are expected by your scripts
 datasets:
   # path specifies the location that your scripts should use to load the file;
   # reference path or uri specifies the location of your original file;
-  - path: datasets/abc.csv
+  - path: abc.csv
     reference:
-      path: datasets/abc-2024.csv
+      path: abc-2024.csv
   # use references to avoid changing paths in your scripts with new datasets;
   # for example, suppose you have a report that relies on a yearly dataset;
   # use path to fix a location where your scripts can expect to find the file;
   # use reference path to point to the latest version of your yearly dataset
-  - path: datasets/def.csv
+  - path: def.csv
     reference:
       uri: https://example.net/def-2024.csv
-  # script runs a script to generate the dataset
-  - path: datasets/ghi.csv
-    script:
-      path: ghi.ipynb
-  # slug identifies a dataset on the server;
-  # write replace means that the dataset will be downloaded and uploaded
-  - path: datasets/jkl.csv
+  # slug identifies a dataset on the server
+  # read replace means the dataset will be downloaded and overwritten locally
+  # write replace means the dataset will be uploaded and overwritten remotely
+  - path: jkl.csv
     slug: jkl
+    read: replace
     write: replace
-  # write append means the dataset will not be downloaded but will be appended
-  - path: datasets/mno.csv
+  # read is none by default; the dataset will not be downloaded
+  # write append means the dataset will be appended remotely
+  - path: mno.csv
     slug: mno
     write: append
-  # slug can also be omitted in which case the slug will be the file name;
-  # write is none by default; the dataset will not be uploaded to the server;
-  # the dataset will be downloaded if a reference or script is not specified
-  - path: datasets/pqr.csv
+  # slug can be omitted in which case the slug will be the file name
+  # read is none by default; the dataset will not be downloaded
+  # write is none by default; the dataset will not be uploaded
+  - path: pqr.csv
 
 # scripts contain code that turn input variables into output variables
 scripts:
