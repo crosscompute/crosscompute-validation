@@ -539,12 +539,6 @@ async def validate_dataset_reference(d):
                     raise CrossComputeConfigurationError(
                         f'dataset reference path "{reference_path}" was not '
                         'found')
-            target_path = d.path
-            if await is_existing_path(
-                    target_path) and not await is_link_path(target_path):
-                raise CrossComputeConfigurationError(
-                    'dataset path conflicts with existing file: please '
-                    f'relocate "{target_path}" from the disk to continue')
     elif 'uri' in dataset_reference:
         pass
     return {'reference': dataset_reference}

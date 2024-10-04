@@ -327,11 +327,12 @@ presets:
 
 # datasets are files that are expected by your scripts
 datasets:
-  # path specifies the location that your scripts should use to load the file;
+  # path specifies the file where your scripts load this dataset (required);
+  #   note that path is relative to the dataset folder;
   # reference path or uri specifies the location of your original file;
   - path: abc.csv
     reference:
-      path: abc-2024.csv
+      path: datasets/abc-2024.csv
   # use references to avoid changing paths in your scripts with new datasets;
   # for example, suppose you have a report that relies on a yearly dataset;
   # use path to fix a location where your scripts can expect to find the file;
