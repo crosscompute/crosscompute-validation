@@ -728,7 +728,9 @@ async def yield_data_by_id_from_txt(path, variable_definitions):
                 if not line or line.startswith('#'):
                     continue
                 data_by_id = {variable_id: {D_VALUE: line}}
-                yield parse_data_by_id(data_by_id, variable_definitions)
+                data_by_id = await parse_data_by_id(
+                    data_by_id, variable_definitions)
+                yield data_by_id
     except OSError as e:
         raise CrossComputeConfigurationError(e)
 

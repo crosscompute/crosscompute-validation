@@ -304,24 +304,24 @@ presets:
   # folder sets values for input variables;
   # folder contains an input subfolder;
   # input subfolder contains files for the input variables
-  - folder: standard
+  - folder: presets/standard
   # configuration sets variable values, where each row is a separate preset
   # folder is the name of the folder saved to disk;
   # name is the preset name displayed online;
   # slug is the preset uri;
   # the above string templates can include variable ids and filters
-  - folder: '{x1 | slug}-{x2}'
+  - folder: presets/{x1 | slug}-{x2}
     name: '{x1 | title} {x2}'
     slug: '{x1 | slug}-{x2}'
     configuration:
       path: presets.csv
   # reference folder sets variable values missing in the configuration path;
   # configuration sets variable values, where each row is a separate preset
-  - folder: '{x1 | slug}-{x2}'
+  - folder: presets/{x1 | slug}-{x2}
     name: '{x1 | title} {x2}'
     slug: '{x1 | slug}-{x2}'
     reference:
-      folder: standard
+      folder: presets/standard
     configuration:
       path: presets.csv
 
