@@ -341,20 +341,20 @@ datasets:
     reference:
       uri: https://example.net/def-2024.csv
   # slug identifies a dataset on the server
-  # read replace means the dataset will be downloaded and overwritten locally
-  # write replace means the dataset will be uploaded and overwritten remotely
+  # input replace means the dataset will be downloaded to the input folder
+  # output replace means the path in the output folder will replace the dataset
   - path: jkl.csv
     slug: jkl
-    read: replace
-    write: replace
+    input: replace
+    output: replace
   # read is none by default; the dataset will not be downloaded
-  # write append means the dataset will be appended remotely
+  # output append means the path in the output folder will be appended remotely
   - path: mno.csv
     slug: mno
-    write: append
+    output: append
   # slug can be omitted in which case the slug will be the file name
-  # read is none by default; the dataset will not be downloaded
-  # write is none by default; the dataset will not be uploaded
+  # input is none by default; the dataset will not be downloaded
+  # output is none by default; the dataset will not be uploaded
   - path: pqr.csv
 
 # scripts contain code that turn input variables into output variables

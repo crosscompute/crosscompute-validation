@@ -506,19 +506,19 @@ async def validate_dataset_identifiers(d):
         raise CrossComputeConfigurationError(
             'path is required for each dataset')
     dataset_slug = format_slug(d.get('slug', dataset_path.name))
-    dataset_read = d.get('read', 'none')
-    if dataset_read not in ['none', 'replace']:
+    dataset_input = d.get('input', 'none')
+    if dataset_input not in ['none', 'replace']:
         raise CrossComputeConfigurationError(
-            f'dataset read "{dataset_read}" is not supported')
-    dataset_write = d.get('write', 'none')
-    if dataset_write not in ['none', 'append', 'replace']:
+            f'dataset input "{dataset_input}" is not supported')
+    dataset_output = d.get('output', 'none')
+    if dataset_output not in ['none', 'append', 'replace']:
         raise CrossComputeConfigurationError(
-            f'dataset write "{dataset_write}" is not supported')
+            f'dataset output "{dataset_output}" is not supported')
     return {
         'path': dataset_path,
         'slug': dataset_slug,
-        'read': dataset_read,
-        'write': dataset_write}
+        'input': dataset_input,
+        'output': dataset_output}
 
 
 async def validate_dataset_reference(d):
