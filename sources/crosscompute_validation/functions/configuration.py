@@ -1,3 +1,4 @@
+# TODO: Check string lengths
 import csv
 from collections import Counter
 from logging import getLogger
@@ -379,6 +380,8 @@ async def validate_datasets(d):
     dataset_dictionaries = get_dictionaries(d, 'datasets')
     dataset_definitions = [await DatasetDefinition.load(
         _, tool_definition=d) for _ in dataset_dictionaries]
+    assert_unique_values([
+        _.path_name for _ in dataset_definitions], 'dataset path "{x}"')
     return {'dataset_definitions': dataset_definitions}
 
 
@@ -501,24 +504,27 @@ async def validate_preset_configuration(d):
 
 
 async def validate_dataset_identifiers(d):
-    dataset_path = get_path(d)
-    if not dataset_path:
+    path_name = get_required_string(d, 'path', 'dataset')
+    tool_folder = d.tool_definition.absolute_folder
+    datasets_folder = tool_folder / 'datasets'
+    try:
+        await assert_path_is_in_folder(
+            datasets_folder / path_name, datasets_folder)
+    except DiskError:
         raise CrossComputeConfigurationError(
-            'path is required for each dataset')
-    dataset_slug = format_slug(d.get('slug', dataset_path.name))
-    dataset_input = d.get('input', 'none')
-    if dataset_input not in ['none', 'replace']:
+            f'dataset path "{path_name}" is invalid')
+    input_mode = d.get('input', 'none')
+    if input_mode not in ['none', 'replace']:
         raise CrossComputeConfigurationError(
-            f'dataset input "{dataset_input}" is not supported')
-    dataset_output = d.get('output', 'none')
-    if dataset_output not in ['none', 'append', 'replace']:
+            f'dataset input "{input_mode}" is not supported')
+    output_mode = d.get('output', 'none')
+    if output_mode not in ['none', 'append', 'replace']:
         raise CrossComputeConfigurationError(
-            f'dataset output "{dataset_output}" is not supported')
+            f'dataset output "{output_mode}" is not supported')
     return {
-        'path': dataset_path,
-        'slug': dataset_slug,
-        'input': dataset_input,
-        'output': dataset_output}
+        'path_name': path_name,
+        'input': input_mode,
+        'output': output_mode}
 
 
 async def validate_dataset_reference(d):
@@ -620,13 +626,9 @@ async def validate_environment_variables(d):
 
 
 async def validate_variable_identifiers(d):
-    try:
-        variable_id = d['id'].strip()
-        view_name = d['view'].strip()
-        variable_path = d['path'].strip()
-    except KeyError as e:
-        raise CrossComputeConfigurationError(
-            f'{e} is required for each variable')
+    variable_id = get_required_string(d, 'id', 'variable')
+    view_name = get_required_string(d, 'view', 'variable')
+    variable_path = get_required_string(d, 'path', 'variable')
     return {
         'id': variable_id,
         'view_name': view_name,
@@ -653,12 +655,8 @@ async def validate_variable_configuration(d):
 
 
 async def validate_package_identifiers(d):
-    try:
-        package_id = d['id']
-        manager_name = d['manager']
-    except KeyError as e:
-        raise CrossComputeConfigurationError(
-            f'{e} is required for each package')
+    package_id = get_required_string(d, 'id', 'package')
+    manager_name = get_required_string(d, 'manager', 'package')
     if manager_name not in PACKAGE_MANAGER_NAMES:
         raise CrossComputeConfigurationError(
             f'manager "{manager_name}" is not supported')
@@ -668,12 +666,8 @@ async def validate_package_identifiers(d):
 
 
 async def validate_port_identifiers(d):
-    try:
-        port_id = d['id']
-        port_number = d['number']
-    except KeyError as e:
-        raise CrossComputeConfigurationError(
-            f'{e} is required for each port')
+    port_id = get_required_string(d, 'id', 'port')
+    port_number = get_required_string(d, 'number', 'port')
     try:
         port_number = int(port_number)
     except ValueError:
@@ -809,6 +803,21 @@ def process_page_number_options(variable_id, print_configuration):
         raise CrossComputeConfigurationError(
             f'print variable "{variable_id}" configuration "{k}" '
             f'alignment "{alignment}" is not supported')
+
+
+def get_required_string(d, k, x):
+    try:
+        value = d[k].strip()
+    except KeyError:
+        raise CrossComputeConfigurationError(
+            f'"{k}" is required for each {x}')
+    except AttributeError:
+        raise CrossComputeConfigurationError(
+            f'"{k}" must be a string')
+    if not value:
+        raise CrossComputeConfigurationError(
+            f'"{k}" cannot be empty')
+    return value
 
 
 def get_dictionaries(d, k):
