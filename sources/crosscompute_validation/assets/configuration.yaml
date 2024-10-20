@@ -496,7 +496,7 @@ authorization:
     # configuration settings define how a group matches an identity;
     # permission ids specify which privileges the identity can access
     - configuration:
-        role_name: admin
+        role_name: owner
       permissions:
         - id: add_token
         - id: see_root
@@ -506,9 +506,7 @@ authorization:
     # note that the value for each configuration setting can also be a list;
     # then an identity will match this group if its setting matches a value
     - configuration:
-        role_name:
-          - leader
-          - member
+        role_name: member
       permissions:
         - id: see_root
         - id: see_tool
