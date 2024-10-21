@@ -8,14 +8,13 @@ from pathlib import Path
 
 from aiofiles import open
 from crosscompute_macros.disk import (
-    assert_path_is_in_folder,
+    is_contained_path,
     is_existing_path,
     is_file_path,
     is_folder_path,
     is_link_path,
+    is_path_in_folder,
     list_paths)
-from crosscompute_macros.error import (
-    DiskError)
 from crosscompute_macros.iterable import (
     apply_functions,
     find_item)
@@ -286,12 +285,9 @@ async def validate_paths(d):
                 path = folder / v
             except TypeError:
                 raise CrossComputeConfigurationError(f'"{k}" must be a string')
-            try:
-                await assert_path_is_in_folder(path, folder)
-            except DiskError as e:
+            if not await is_path_in_folder(path, folder):
                 raise CrossComputeConfigurationError(
-                    f'path "{v}" must be within '
-                    f'folder "{redact_path(folder)}"; {e}')
+                    f'path "{v}" must be in folder "{redact_path(folder)}"')
         elif isinstance(v, dict):
             packs.extend(v.items())
         elif isinstance(v, list):
@@ -505,12 +501,7 @@ async def validate_preset_configuration(d):
 
 async def validate_dataset_identifiers(d):
     path_name = get_required_string(d, 'path', 'dataset')
-    tool_folder = d.tool_definition.absolute_folder
-    datasets_folder = tool_folder / 'datasets'
-    try:
-        await assert_path_is_in_folder(
-            datasets_folder / path_name, datasets_folder)
-    except DiskError:
+    if not is_contained_path(path_name):
         raise CrossComputeConfigurationError(
             f'dataset path "{path_name}" is invalid')
     input_mode = d.get('input', 'none')
