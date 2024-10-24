@@ -115,6 +115,7 @@ class ToolDefinition(Definition):
 class CopyrightDefinition(Definition):
 
     async def _initialize(self, **kwargs):
+        self.tool_definition = kwargs['tool_definition']
         self._validation_functions.extend([
             validate_copyright_identifiers])
 
@@ -310,7 +311,8 @@ async def validate_tool_identifiers(d):
 
 async def validate_copyright(d):
     copyright_dictionary = get_dictionary(d, 'copyright')
-    copyright_definition = await CopyrightDefinition.load(copyright_dictionary)
+    copyright_definition = await CopyrightDefinition.load(
+        copyright_dictionary, tool_definition=d)
     return {'copyright_definition': copyright_definition}
 
 
@@ -418,7 +420,7 @@ async def validate_copyright_identifiers(d):
         raise CrossComputeConfigurationError(
             f'copyright "{e}" is specified in text but undefined')
     copyright_text = copyright_text.strip()
-    if not copyright_text:
+    if not copyright_text and 'output' in d.tool_definition:
         raise CrossComputeConfigurationError(
             'copyright is required, either as text or name and year')
     return {'text': copyright_text}
@@ -514,8 +516,8 @@ async def validate_dataset_identifiers(d):
             f'dataset output "{output_mode}" is not supported')
     return {
         'path_name': path_name,
-        'input': input_mode,
-        'output': output_mode}
+        'input_mode': input_mode,
+        'output_mode': output_mode}
 
 
 async def validate_dataset_reference(d):
