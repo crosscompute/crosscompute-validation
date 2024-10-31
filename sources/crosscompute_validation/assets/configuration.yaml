@@ -471,8 +471,8 @@ display:
             text: Volver
     - id: output
       configuration:
-        # design none removes all variable labels and css
-        design: none
+        # design flat prevents section folding
+        design: flat
 
 # authorization restricts access to your tool
 authorization:
