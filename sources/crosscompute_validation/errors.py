@@ -25,6 +25,20 @@ class CrossComputeError(Exception):
                 f'tool_version="{tool.version}"'])
         return '; '.join(texts)
 
+    def get_dictionary(self):
+        d = {}
+        try:
+            d['message'] = self.args[0]
+        except IndexError:
+            pass
+        for k, v in self.__dict__.items():
+            if k == 'tool':
+                d['tool_name'] = v.name
+                d['tool_version'] = v.version
+            else:
+                d[k] = v
+        return d
+
 
 class CrossComputeFormatError(CrossComputeError):
     pass
