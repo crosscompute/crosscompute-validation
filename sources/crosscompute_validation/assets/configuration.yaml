@@ -25,6 +25,7 @@ copyright:
     {owner_uri}) © {year}. Made with the [CrossCompute Analytics
     Software Development Kit](https://docs.crosscompute.com).
   name: CrossCompute
+  slug: crosscompute
   year: 2024
   image_uri: /assets/logo.svg
   owner_uri: https://crosscompute.com
