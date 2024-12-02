@@ -25,7 +25,7 @@ class CrossComputeError(Exception):
                 f'tool_version="{tool.version}"'])
         return '; '.join(texts)
 
-    def get_dictionary(self):
+    def get_map(self):
         d = {}
         try:
             d['message'] = self.args[0]

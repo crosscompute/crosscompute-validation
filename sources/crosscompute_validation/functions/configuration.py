@@ -310,19 +310,19 @@ async def validate_tool_identifiers(d):
 
 
 async def validate_copyright(d):
-    copyright_dictionary = get_dictionary(d, 'copyright')
+    copyright_map = get_map(d, 'copyright')
     copyright_definition = await CopyrightDefinition.load(
-        copyright_dictionary, tool_definition=d)
+        copyright_map, tool_definition=d)
     return {'copyright_definition': copyright_definition}
 
 
 async def validate_tools(d):
     tool_definitions = [d] if 'output' in d else []
-    tool_dictionaries = get_dictionaries(d, 'tools')
+    tool_maps = get_maps(d, 'tools')
     tool_folder = d.absolute_folder
-    for i, tool_dictionary in enumerate(tool_dictionaries):
-        if 'path' in tool_dictionary:
-            path = tool_folder / tool_dictionary['path']
+    for i, tool_map in enumerate(tool_maps):
+        if 'path' in tool_map:
+            path = tool_folder / tool_map['path']
         else:
             raise CrossComputeConfigurationError(
                 'tool path or uri is required')
@@ -343,9 +343,9 @@ async def validate_steps(d):
     for step_name in STEP_NAMES:
         if step_name not in d:
             continue
-        step_dictionary = d[step_name]
+        step_map = d[step_name]
         step_definition = await StepDefinition.load(
-            step_dictionary, name=step_name)
+            step_map, name=step_name)
         step_definition_by_name[step_name] = step_definition
         variable_ids = [_.id for _ in step_definition.variable_definitions]
         assert_unique_values(variable_ids, 'variable id "{x}"')
@@ -358,9 +358,9 @@ async def validate_steps(d):
 
 async def validate_presets(d):
     preset_definitions = []
-    for preset_dictionary in get_dictionaries(d, 'presets'):
+    for preset_map in get_maps(d, 'presets'):
         preset_definition = await PresetDefinition.load(
-            preset_dictionary, tool_definition=d, data={})
+            preset_map, tool_definition=d, data={})
         preset_definitions.extend(preset_definition.preset_definitions)
     if 'output' in d and not preset_definitions:
         raise CrossComputeConfigurationError(
@@ -375,25 +375,25 @@ async def validate_presets(d):
 
 
 async def validate_datasets(d):
-    dataset_dictionaries = get_dictionaries(d, 'datasets')
+    dataset_maps = get_maps(d, 'datasets')
     dataset_definitions = [await DatasetDefinition.load(
-        _, tool_definition=d) for _ in dataset_dictionaries]
+        _, tool_definition=d) for _ in dataset_maps]
     assert_unique_values([
         _.path_name for _ in dataset_definitions], 'dataset path "{x}"')
     return {'dataset_definitions': dataset_definitions}
 
 
 async def validate_scripts(d):
-    script_dictionaries = get_dictionaries(d, 'scripts')
+    script_maps = get_maps(d, 'scripts')
     script_definitions = [await ScriptDefinition.load(
-        _, tool_definition=d) for _ in script_dictionaries]
+        _, tool_definition=d) for _ in script_maps]
     return {'script_definitions': script_definitions}
 
 
 async def validate_environment(d):
-    environment_dictionary = get_dictionary(d, 'environment')
+    environment_map = get_map(d, 'environment')
     environment_definition = await EnvironmentDefinition.load(
-        environment_dictionary, tool_definition=d)
+        environment_map, tool_definition=d)
     return {'environment_definition': environment_definition}
 
 
@@ -427,9 +427,9 @@ async def validate_copyright_identifiers(d):
 
 
 async def validate_step_variables(d):
-    variable_dictionaries = get_dictionaries(d, 'variables')
+    variable_maps = get_maps(d, 'variables')
     variable_definitions = [await VariableDefinition.load(
-        _, step_name=d.name) for _ in variable_dictionaries]
+        _, step_name=d.name) for _ in variable_maps]
     return {'variable_definitions': variable_definitions}
 
 
@@ -448,7 +448,7 @@ async def validate_preset_identifiers(d):
         slug = format_text(slug, data_by_id)
     except CrossComputeConfigurationError as e:
         if hasattr(e, 'variable_id'):
-            preset_configuration = get_dictionary(d, 'configuration')
+            preset_configuration = get_map(d, 'configuration')
             if 'path' in preset_configuration:
                 e.path = preset_configuration['path']
         raise
@@ -461,7 +461,7 @@ async def validate_preset_identifiers(d):
 
 
 async def validate_preset_reference(d):
-    preset_reference = get_dictionary(d, 'reference')
+    preset_reference = get_map(d, 'reference')
     if 'folder' in preset_reference:
         reference_data_by_id = await d.tool_definition.load_data_by_id(
             preset_reference['folder'], 'input')
@@ -472,8 +472,8 @@ async def validate_preset_reference(d):
 
 async def validate_preset_configuration(d):
     preset_definitions = []
-    preset_dictionary = d.copy()
-    preset_configuration = preset_dictionary.pop('configuration', {})
+    preset_map = d.copy()
+    preset_configuration = preset_map.pop('configuration', {})
     reference_data_by_id = d.__reference_data_by_id
     tool_definition = d.tool_definition
     tool_folder = tool_definition.absolute_folder
@@ -521,7 +521,7 @@ async def validate_dataset_identifiers(d):
 
 
 async def validate_dataset_reference(d):
-    dataset_reference = get_dictionary(d, 'reference')
+    dataset_reference = get_map(d, 'reference')
     if 'path' in dataset_reference:
         reference_path = get_path(dataset_reference)
         if reference_path:
@@ -547,14 +547,14 @@ async def validate_script_identifiers(d):
     method_names = []
     if 'command' in d:
         command_string = d['command']
-        preparation_dictionary = {}
+        preparation_map = {}
         method_names.append('command')
     if 'path' in d:
-        command_string, preparation_dictionary = prepare_script_path(
+        command_string, preparation_map = prepare_script_path(
             d['path'])
         method_names.append('path')
     if 'function' in d:
-        command_string, preparation_dictionary = prepare_script_function(
+        command_string, preparation_map = prepare_script_function(
             d.get('language', SCRIPT_LANGUAGE), d['function'])
         method_names.append('function')
     if not method_names:
@@ -567,7 +567,7 @@ async def validate_script_identifiers(d):
     return {
         'folder': Path(d.get('folder', '.')),
         'command_string': command_string,
-        'preparation_dictionary': preparation_dictionary}
+        'preparation_map': preparation_map}
 
 
 async def validate_engine(d):
@@ -577,9 +577,9 @@ async def validate_engine(d):
 
 
 async def validate_packages(d):
-    package_dictionaries = get_dictionaries(d, 'packages')
+    package_maps = get_maps(d, 'packages')
     package_definitions = [await PackageDefinition.load(
-        _) for _ in package_dictionaries]
+        _) for _ in package_maps]
     return {
         'package_definitions': package_definitions}
 
@@ -588,8 +588,8 @@ async def validate_ports(d):
     port_definitions = []
     f = d.tool_definition.get_variable_definitions
     variable_definitions = f('log') + f('debug')
-    for port_dictionary in get_dictionaries(d, 'ports'):
-        port_definition = await PortDefinition.load(port_dictionary)
+    for port_map in get_maps(d, 'ports'):
+        port_definition = await PortDefinition.load(port_map)
         port_id = port_definition.id
         try:
             variable_definition = find_item(
@@ -604,13 +604,13 @@ async def validate_ports(d):
 
 
 async def validate_environment_variables(d):
-    variable_dictionaries = get_dictionaries(d, 'variables')
+    variable_maps = get_maps(d, 'variables')
     variable_definitions = []
-    for variable_dictionary in variable_dictionaries:
-        variable_id = variable_dictionary['id']
+    for variable_map in variable_maps:
+        variable_id = variable_map['id']
         if variable_id not in environ:
             L.error('tool environment is missing variable "%s"', variable_id)
-        variable_definition = VariableDefinition(variable_dictionary)
+        variable_definition = VariableDefinition(variable_map)
         variable_definition.id = variable_id
         variable_definitions.append(variable_definition)
     assert_unique_values([
@@ -630,7 +630,7 @@ async def validate_variable_identifiers(d):
 
 async def validate_variable_configuration(d):
     # TODO: Validate configuration according to variable view
-    c = get_dictionary(d, 'configuration')
+    c = get_map(d, 'configuration')
     if 'path' in c:
         p = c['path']
         if not p.endswith('.json'):
@@ -741,23 +741,23 @@ def prepare_script_path(script_path):
     match path.suffix:
         case '.py':
             command_string = f'python "{path}"'
-            preparation_dictionary = {}
+            preparation_map = {}
         case '.ipynb':
             new_path = '.' + str(path.with_suffix('.ipynb.py'))
             command_string = f'python "{new_path}"'
-            preparation_dictionary = {
+            preparation_map = {
                 'target_path': new_path,
                 'notebook_path': path}
         case '.sh':
             command_string = f'{shell_name} "{path}"'
-            preparation_dictionary = {}
+            preparation_map = {}
         case _:
             suffixes_string = ' '.join(['.py', '.ipynb'])
             raise CrossComputeConfigurationError(
                 f'script path suffix can be one of {suffixes_string}; '
                 f'message {SUPPORT_EMAIL} to request support for '
                 'more suffixes')
-    return command_string, preparation_dictionary
+    return command_string, preparation_map
 
 
 def prepare_script_function(script_language, function_string):
@@ -765,7 +765,7 @@ def prepare_script_function(script_language, function_string):
         case 'python':
             path = '.run.py'
             command_string = f'python "{path}"'
-            preparation_dictionary = {
+            preparation_map = {
                 'target_path': path,
                 'function_string': function_string}
         case _:
@@ -774,18 +774,18 @@ def prepare_script_function(script_language, function_string):
                 f'script language can be one of {languages_string}; '
                 f'message {SUPPORT_EMAIL} to request support for '
                 'more languages')
-    return command_string, preparation_dictionary
+    return command_string, preparation_map
 
 
 def process_header_footer_options(variable_id, print_configuration):
     k = 'header-footer'
-    d = get_dictionary(print_configuration, k)
+    d = get_map(print_configuration, k)
     d['skip-first'] = bool(d.get('skip-first'))
 
 
 def process_page_number_options(variable_id, print_configuration):
     k = 'page-number'
-    d = get_dictionary(print_configuration, k)
+    d = get_map(print_configuration, k)
     location = d.get('location')
     if location and location not in ['header', 'footer']:
         raise CrossComputeConfigurationError(
@@ -813,19 +813,19 @@ def get_required_string(d, k, x):
     return value
 
 
-def get_dictionaries(d, k):
+def get_maps(d, k):
     values = get_list(d, k)
     for v in values:
         if not isinstance(v, dict):
             raise CrossComputeConfigurationError(
-                f'"{k}" must be a list of dictionaries')
+                f'"{k}" must be a list of maps')
     return values
 
 
-def get_dictionary(d, k):
+def get_map(d, k):
     value = d.get(k, {})
     if not isinstance(value, dict):
-        raise CrossComputeConfigurationError(f'"{k}" must be a dictionary')
+        raise CrossComputeConfigurationError(f'"{k}" must be a map')
     return value
 
 
