@@ -32,7 +32,6 @@ RAW_DATA_CACHE_LENGTH = 256
 SCRIPT_LANGUAGE = 'python'
 ENGINE_NAME = 'podman'
 IMAGE_NAME = 'python'
-PACKAGE_MANAGER_NAMES = 'dnf', 'apt', 'pip', 'npm'
 
 
 SUPPORT_EMAIL = 'support@crosscompute.com'

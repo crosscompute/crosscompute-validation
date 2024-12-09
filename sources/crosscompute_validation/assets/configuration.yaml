@@ -449,31 +449,26 @@ display:
     # id specifies the name of the page to override;
     # configuration sets the design of the page
     - id: tool
-      configuration:
-        # design input puts the input template on the tool page
-        design: input
+      # design input puts the input template on the tool page
+      design: input
     - id: tool
-      configuration:
-        # design output puts the output template on the tool page
-        design: output
+      # design output puts the output template on the tool page
+      design: output
     - id: tool
-      configuration:
-        # design none only renders the list of presets on the tool page
-        design: none
+      # design none only renders the list of presets on the tool page
+      design: none
     - id: input
-      configuration:
-        # design none removes all variable labels and css
-        design: none
-        # buttons override the design of specific buttons
-        buttons:
-          - id: continue
-            text: Continuar
-          - id: back
-            text: Volver
+      # design none removes all variable labels and css
+      design: none
+      # buttons override the design of specific buttons
+      buttons:
+        - id: continue
+          text: Continuar
+        - id: back
+          text: Volver
     - id: output
-      configuration:
-        # design flat prevents section folding
-        design: flat
+      # design flat prevents section folding
+      design: flat
 
 # authorization restricts access to your tool
 authorization:

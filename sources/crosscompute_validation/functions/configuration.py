@@ -34,7 +34,6 @@ from ..constants import (
     ENGINE_NAME,
     ERROR_CONFIGURATION_NOT_FOUND,
     IMAGE_NAME,
-    PACKAGE_MANAGER_NAMES,
     SCRIPT_LANGUAGE,
     STEP_NAMES,
     SUPPORT_EMAIL,
@@ -648,7 +647,7 @@ async def validate_environment_variables(d):
 
 async def validate_pages(d):
     page_maps = get_maps(d, 'pages')
-    page_definitions = [PageDefinition(_) for _ in page_maps]
+    page_definitions = [await PageDefinition.load(_) for _ in page_maps]
     return {'page_definitions': page_definitions}
 
 
@@ -684,7 +683,7 @@ async def validate_variable_configuration(d):
 async def validate_package_identifiers(d):
     package_id = get_required_string(d, 'id', 'package')
     manager_name = get_required_string(d, 'manager', 'package')
-    if manager_name not in PACKAGE_MANAGER_NAMES:
+    if manager_name not in ['dnf', 'apt', 'pip', 'npm']:
         raise CrossComputeConfigurationError(
             f'manager "{manager_name}" is not supported')
     return {
@@ -706,22 +705,25 @@ async def validate_port_identifiers(d):
 
 
 async def validate_page_identifiers(d):
-    # TODO
     page_id = get_required_string(d, 'id', 'page')
-    page_configuration = get_map(d, 'configuration')
-    design_name = page_configuration.get('design')
+    design_name = d.get('design')
     if page_id == 'tool':
         if not design_name:
-            pass
-        if design_name not in []:
-            raise CrossComputeConfigurationError()
+            design_name = 'input'
+        if design_name not in ['input', 'output', 'none']:
+            raise CrossComputeConfigurationError(
+                f'tool design "{design_name}" is not supported')
     elif page_id in ['input', 'output', 'log', 'debug']:
         if not design_name:
-            pass
-        if design_name not in []:
-            raise CrossComputeConfigurationError()
-    button_maps = get_maps(page_configuration, 'buttons')
-    button_definitions = [ButtonDefinition(_) for _ in button_maps]
+            design_name = 'flex'
+        if design_name not in ['flex', 'flat', 'none']:
+            raise CrossComputeConfigurationError(
+                f'tool design "{design_name}" is not supported')
+    else:
+        raise CrossComputeConfigurationError(
+            f'page id "{page_id}" is not supported')
+    button_maps = get_maps(d, 'buttons')
+    button_definitions = [await ButtonDefinition.load(_) for _ in button_maps]
     return {
         'id': page_id,
         'design_name': design_name,
@@ -729,8 +731,12 @@ async def validate_page_identifiers(d):
 
 
 async def validate_button_identifiers(d):
-    # TODO
-    return {}
+    button_id = get_required_string(d, 'id', 'button')
+    if button_id not in ['continue', 'back']:
+        raise CrossComputeConfigurationError(
+            f'button id "{button_id}" is not supported')
+    button_text = get_required_string(d, 'text', 'button')
+    return {'id': button_id, 'text': button_text}
 
 
 async def yield_data_by_id_from_csv(path, variable_definitions):
