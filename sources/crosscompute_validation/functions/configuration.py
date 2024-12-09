@@ -95,7 +95,8 @@ class ToolDefinition(Definition):
             validate_presets,
             validate_datasets,
             validate_scripts,
-            validate_environment])
+            validate_environment,
+            validate_display])
 
     async def load_data_by_id(self, result_folder, step_name):
         variable_definitions = self.get_variable_definitions(step_name)
@@ -168,6 +169,15 @@ class EnvironmentDefinition(Definition):
             validate_environment_variables])
 
 
+class DisplayDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self._validation_functions.extend([
+            # validate_styles,
+            # validate_templates,
+            validate_pages])
+
+
 class VariableDefinition(Definition):
 
     async def _initialize(self, **kwargs):
@@ -189,6 +199,20 @@ class PortDefinition(Definition):
     async def _initialize(self, **kwargs):
         self._validation_functions.extend([
             validate_port_identifiers])
+
+
+class PageDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self._validation_functions.extend([
+            validate_page_identifiers])
+
+
+class ButtonDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self._validation_functions.extend([
+            validate_button_identifiers])
 
 
 async def load_configuration(path_or_folder, locus='0'):
@@ -395,6 +419,13 @@ async def validate_environment(d):
     environment_definition = await EnvironmentDefinition.load(
         environment_map, tool_definition=d)
     return {'environment_definition': environment_definition}
+
+
+async def validate_display(d):
+    display_map = get_map(d, 'display')
+    display_definition = await DisplayDefinition.load(
+        display_map)
+    return {'display_definition': display_definition}
 
 
 async def validate_copyright_identifiers(d):
@@ -605,17 +636,20 @@ async def validate_ports(d):
 
 async def validate_environment_variables(d):
     variable_maps = get_maps(d, 'variables')
-    variable_definitions = []
-    for variable_map in variable_maps:
-        variable_id = variable_map['id']
+    variable_definitions = [VariableDefinition(_) for _ in variable_maps]
+    for variable_definition in variable_definitions:
+        variable_id = variable_definition.id
         if variable_id not in environ:
             L.error('tool environment is missing variable "%s"', variable_id)
-        variable_definition = VariableDefinition(variable_map)
-        variable_definition.id = variable_id
-        variable_definitions.append(variable_definition)
     assert_unique_values([
         _.id for _ in variable_definitions], 'environment variable id "{x}"')
     return {'variable_definitions': variable_definitions}
+
+
+async def validate_pages(d):
+    page_maps = get_maps(d, 'pages')
+    page_definitions = [PageDefinition(_) for _ in page_maps]
+    return {'page_definitions': page_definitions}
 
 
 async def validate_variable_identifiers(d):
@@ -669,6 +703,34 @@ async def validate_port_identifiers(d):
     return {
         'id': port_id,
         'number': port_number}
+
+
+async def validate_page_identifiers(d):
+    # TODO
+    page_id = get_required_string(d, 'id', 'page')
+    page_configuration = get_map(d, 'configuration')
+    design_name = page_configuration.get('design')
+    if page_id == 'tool':
+        if not design_name:
+            pass
+        if design_name not in []:
+            raise CrossComputeConfigurationError()
+    elif page_id in ['input', 'output', 'log', 'debug']:
+        if not design_name:
+            pass
+        if design_name not in []:
+            raise CrossComputeConfigurationError()
+    button_maps = get_maps(page_configuration, 'buttons')
+    button_definitions = [ButtonDefinition(_) for _ in button_maps]
+    return {
+        'id': page_id,
+        'design_name': design_name,
+        'button_definitions': button_definitions}
+
+
+async def validate_button_identifiers(d):
+    # TODO
+    return {}
 
 
 async def yield_data_by_id_from_csv(path, variable_definitions):
