@@ -346,7 +346,7 @@ datasets:
   - path: jkl.csv
     input: replace
     output: replace
-  # read is none by default; the dataset will not be downloaded
+  # input is none by default; the dataset will not be downloaded
   # output append means the path in the output folder will be appended remotely
   - path: mno.csv
     output: append
