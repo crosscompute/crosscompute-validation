@@ -635,7 +635,8 @@ async def validate_ports(d):
 
 async def validate_environment_variables(d):
     variable_maps = get_maps(d, 'variables')
-    variable_definitions = [VariableDefinition(_) for _ in variable_maps]
+    variable_definitions = [await VariableDefinition.load(
+        _) for _ in variable_maps]
     for variable_definition in variable_definitions:
         variable_id = variable_definition.id
         if variable_id not in environ:
