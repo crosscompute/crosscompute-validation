@@ -635,14 +635,14 @@ async def validate_ports(d):
 
 async def validate_environment_variables(d):
     variable_maps = get_maps(d, 'variables')
-    variable_definitions = [await VariableDefinition.load(
+    variable_definitions = [VariableDefinition(
         _) for _ in variable_maps]
     for variable_definition in variable_definitions:
-        variable_id = variable_definition.id
+        variable_id = variable_definition['id']
         if variable_id not in environ:
             L.error('tool environment is missing variable "%s"', variable_id)
     assert_unique_values([
-        _.id for _ in variable_definitions], 'environment variable id "{x}"')
+        _['id'] for _ in variable_definitions], 'environment variable id "{x}"')
     return {'variable_definitions': variable_definitions}
 
 
