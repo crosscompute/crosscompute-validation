@@ -180,7 +180,7 @@ class DisplayDefinition(Definition):
 class VariableDefinition(Definition):
 
     async def _initialize(self, **kwargs):
-        self.step_name = kwargs['step_name']
+        self.step_name = kwargs.get('step_name')
         self._validation_functions.extend([
             validate_variable_identifiers,
             validate_variable_configuration])
