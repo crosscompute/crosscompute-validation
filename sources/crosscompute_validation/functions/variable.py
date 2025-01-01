@@ -112,7 +112,7 @@ async def load_variable_data(folder, variable, with_configuration_path=True):
         await restore_data_configuration(
             variable_data, folder, variable, {}, with_configuration_path)
     else:
-        variable_data = {}
+        variable_data = raw_data
     if D_VALUE in variable_data:
         variable_data[D_VALUE] = await LoadableVariableView.get_from(
             variable).parse(variable_data[D_VALUE])

@@ -641,8 +641,9 @@ async def validate_environment_variables(d):
         variable_id = variable_definition['id']
         if variable_id not in environ:
             L.error('tool environment is missing variable "%s"', variable_id)
-    assert_unique_values([
-        _['id'] for _ in variable_definitions], 'environment variable id "{x}"')
+    assert_unique_values(
+        [_['id'] for _ in variable_definitions],
+        'environment variable id "{x}"')
     return {'variable_definitions': variable_definitions}
 
 

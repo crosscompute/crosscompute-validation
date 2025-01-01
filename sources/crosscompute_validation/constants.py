@@ -11,7 +11,7 @@ CONFIGURATION_NAME = 'automate.yaml'
 TOOL_NAME = 'Tool X'
 TOOLKIT_NAME = 'Toolkit X'
 TOOL_VERSION = '0.0.0'
-STEP_NAMES = 'input', 'output', 'log', 'debug', 'print'
+STEP_NAMES = 'input', 'log', 'output', 'debug', 'print'
 
 
 COPYRIGHT_URI_AND_IMAGE_TEXT = '''\
