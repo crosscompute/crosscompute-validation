@@ -186,6 +186,14 @@ class VariableDefinition(Definition):
             validate_variable_configuration])
 
 
+class TemplateDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self._validation_functions.extend([
+            validate_template_identifiers,
+        ])
+
+
 class PackageDefinition(Definition):
 
     async def _initialize(self, **kwargs):
@@ -464,7 +472,10 @@ async def validate_step_variables(d):
 
 
 async def validate_step_templates(d):
-    return {'template_definitions': []}
+    template_maps = get_maps(d, 'templates')
+    template_definitions = [await TemplateDefinition.load(
+        _) for _ in template_maps]
+    return {'template_definitions': template_definitions}
 
 
 async def validate_preset_identifiers(d):
@@ -680,6 +691,14 @@ async def validate_variable_configuration(d):
             process_header_footer_options(variable_id, c)
             process_page_number_options(variable_id, c)
     return {'configuration': c}
+
+
+async def validate_template_identifiers(d):
+    path_name = get_required_string(d, 'path', 'template')
+    expression_text = d.get('expression')
+    return {
+        'path_name': path_name,
+        'expression_text': expression_text}
 
 
 async def validate_package_identifiers(d):
