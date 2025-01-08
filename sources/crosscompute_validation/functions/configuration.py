@@ -375,6 +375,7 @@ async def validate_steps(d):
         if step_name not in d:
             continue
         step_map = d[step_name]
+        # !!!
         step_definition = await StepDefinition.load(
             step_map, name=step_name)
         step_definition_by_name[step_name] = step_definition
