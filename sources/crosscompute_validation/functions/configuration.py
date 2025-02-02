@@ -124,6 +124,7 @@ class StepDefinition(Definition):
 
     async def _initialize(self, **kwargs):
         self.name = kwargs['name']
+        self.tool_definition = kwargs['tool_definition']
         self._validation_functions.extend([
             validate_step_variables,
             validate_step_templates])
@@ -189,9 +190,9 @@ class VariableDefinition(Definition):
 class TemplateDefinition(Definition):
 
     async def _initialize(self, **kwargs):
+        self.tool_definition = kwargs['tool_definition']
         self._validation_functions.extend([
-            validate_template_identifiers,
-        ])
+            validate_template_identifiers])
 
 
 class PackageDefinition(Definition):
@@ -375,9 +376,8 @@ async def validate_steps(d):
         if step_name not in d:
             continue
         step_map = d[step_name]
-        # !!!
         step_definition = await StepDefinition.load(
-            step_map, name=step_name)
+            step_map, name=step_name, tool_definition=d)
         step_definition_by_name[step_name] = step_definition
         variable_ids = [_.id for _ in step_definition.variable_definitions]
         assert_unique_values(variable_ids, 'variable id "{x}"')
@@ -475,7 +475,7 @@ async def validate_step_variables(d):
 async def validate_step_templates(d):
     template_maps = get_maps(d, 'templates')
     template_definitions = [await TemplateDefinition.load(
-        _) for _ in template_maps]
+        _, tool_definition=d.tool_definition) for _ in template_maps]
     return {'template_definitions': template_definitions}
 
 
