@@ -20,11 +20,15 @@ from crosscompute_macros.iterable import (
     find_item)
 from crosscompute_macros.log import (
     redact_path)
+from crosscompute_macros.package import (
+    is_equivalent_version)
 from crosscompute_macros.text import (
     format_slug)
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
+from .. import (
+    __version__ as package_version)
 from ..constants import (
     CONFIGURATION_NAME,
     COPYRIGHT_TEXT,
@@ -86,6 +90,7 @@ class ToolDefinition(Definition):
         self.absolute_folder = path.parent
         self.locus = kwargs['locus']
         self._validation_functions.extend([
+            validate_protocol,
             validate_paths,
             validate_tool_identifiers,
             validate_copyright,
@@ -315,6 +320,23 @@ async def load_raw_configuration_yaml(configuration_path, with_comments=False):
     except (OSError, YAMLError) as e:
         raise CrossComputeConfigurationError(e)
     return configuration or {}
+
+
+async def validate_protocol(d):
+    if 'crosscompute' not in d:
+        raise CrossComputeError('crosscompute protocol version is missing')
+    protocol_version = d['crosscompute'].strip()
+    if not protocol_version:
+        raise CrossComputeConfigurationError(
+            'crosscompute protocol version is required')
+    elif not is_equivalent_version(
+            protocol_version, package_version, version_depth=3):
+        raise CrossComputeConfigurationError(
+            f'crosscompute protocol {protocol_version} is not compatible with '
+            f'crosscompute {package_version}, which is currently installed; '
+            f'pip install crosscompute=={protocol_version}')
+    return {
+        'protocol_version': protocol_version}
 
 
 async def validate_paths(d):
