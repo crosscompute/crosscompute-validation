@@ -1,5 +1,5 @@
 ---
-* crosscompute: 1.0.0
+** crosscompute: 1.0.0
 
 * title: Tool X - Improve health, safety, quality of life
 * description: Improve health, safety, quality of life in our communities
@@ -47,8 +47,8 @@ input:
     - id: town_name
       view: string
       path: variables.dictionary
-      * label: What is the name of your town?
-      * configuration:
+      ** label: What is the name of your town?
+      ** configuration:
         suggestions:
           - value: Springfield
           - value: Branson
@@ -93,13 +93,13 @@ input:
 output:
   variables:
     - id: document
-      * view: link
+      ** view: link
       path: document.pdf
       configuration:
         link-text: YOUR-LINK-TEXT
         file-name: YOUR-FILE-NAME
     - id: counts
-      * view: table
+      ** view: table
       path: counts.json
     - id: demo
       * view: frame
@@ -141,7 +141,7 @@ debug:
   variables:
   templates:
 
-* print:
+** print:
   variables:
     - id: report
       view: pdf
@@ -197,8 +197,8 @@ environment:
   * interval: 30 minutes
   * # interval: 30 minutes!
 
-* display:
-  pages:
+display:
+  ** pages:
     - id: tool
       design: input
     - id: tool
@@ -214,7 +214,7 @@ environment:
           text: Volver
     - id: output
       design: flat
-  templates:
+  * templates:
     - id: base
       path: base.html
     - id: live
