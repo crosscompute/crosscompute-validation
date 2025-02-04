@@ -44,7 +44,25 @@ results:
 
 input:
   variables:
-    - label: What is the name of your town?
+    - id: town_name
+      view: string
+      path: variables.dictionary
+      label: What is the name of your town?
+      configuration:
+        suggestions:
+          - value: Springfield
+          - value: Branson
+          - value: Nixa
+          - value: Mansfield
+          - value: Independence
+    - id: profile_photo
+      view: file
+      path: photo{index}{suffix}
+      configuration:
+        mime-types:
+          - image/jpeg
+          - image/png
+          - image/svg+xml
     - id: flavor
       view: radio
       path: variables.dictionary
@@ -180,6 +198,22 @@ environment:
   # interval: 30 minutes!
 
 display:
+  pages:
+    - id: tool
+      design: input
+    - id: tool
+      design: output
+    - id: tool
+      design: none
+    - id: input
+      design: none
+      buttons:
+        - id: continue
+          text: Continuar
+        - id: back
+          text: Volver
+    - id: output
+      design: flat
   templates:
     - id: base
       path: base.html

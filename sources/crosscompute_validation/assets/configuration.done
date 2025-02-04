@@ -18,16 +18,6 @@ tools:
 
 input:
   variables:
-    - id: town_name
-      view: string
-      path: variables.dictionary
-      configuration:
-        suggestions:
-          - value: Springfield
-          - value: Branson
-          - value: Nixa
-          - value: Mansfield
-          - value: Independence
     - id: age
       view: number
       path: variables.dictionary
@@ -41,14 +31,6 @@ input:
     - id: blurb
       view: markdown
       path: blurb.md
-    - id: profile_photo
-      view: file
-      path: photo{index}{suffix}
-      configuration:
-        mime-types:
-          - image/jpeg
-          - image/png
-          - image/svg+xml
   templates:
     - path: input.md
 
@@ -131,19 +113,3 @@ display:
   styles:
     - path: style.css
     - uri: https://cdn.jsdelivr.net/npm/pygments-css@1.0.0/default.css
-  pages:
-    - id: tool
-      design: input
-    - id: tool
-      design: output
-    - id: tool
-      design: none
-    - id: input
-      design: none
-      buttons:
-        - id: continue
-          text: Continuar
-        - id: back
-          text: Volver
-    - id: output
-      design: flat

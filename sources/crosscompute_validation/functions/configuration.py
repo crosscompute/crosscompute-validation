@@ -172,6 +172,7 @@ class EnvironmentDefinition(Definition):
 class DisplayDefinition(Definition):
 
     async def _initialize(self, **kwargs):
+        self.tool_definition = kwargs['tool_definition']
         self._validation_functions.extend([
             validate_styles,
             # validate_templates,
@@ -212,6 +213,7 @@ class PortDefinition(Definition):
 class StyleDefinition(Definition):
 
     async def _initialize(self, **kwargs):
+        self.tool_definition = kwargs['tool_definition']
         self._validation_functions.extend([
             validate_style_identifiers])
 
@@ -439,7 +441,7 @@ async def validate_environment(d):
 async def validate_display(d):
     display_map = get_map(d, 'display')
     display_definition = await DisplayDefinition.load(
-        display_map)
+        display_map, tool_definition=d)
     return {'display_definition': display_definition}
 
 
@@ -668,7 +670,8 @@ async def validate_environment_variables(d):
 
 async def validate_styles(d):
     style_maps = get_maps(d, 'styles')
-    style_definitions = [await StyleDefinition.load(_) for _ in style_maps]
+    style_definitions = [await StyleDefinition.load(
+        _, tool_definition=d.tool_definition) for _ in style_maps]
     return {'style_definitions': style_definitions}
 
 
