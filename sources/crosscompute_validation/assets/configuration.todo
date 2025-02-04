@@ -1,0 +1,209 @@
+---
+crosscompute: 1.0.0
+
+title: Tool X - Improve health, safety, quality of life
+description: Improve health, safety, quality of life in our communities
+
+copyright:
+  slug: crosscompute
+
+network:
+  markets:
+    - uri: https://crosscompute.net
+    - path: market-uris.txt
+  peers:
+    - uri: https://example.com/peer-uris.txt
+    - path: peer-uris.txt
+  keys:
+    - uri: https://example.com/network-keys.txt
+    - path: network-keys.txt
+
+pricing:
+  account: nano_abc
+  period: month
+  amount: 100
+  currency: xno
+
+tools:
+  - path: abc/automate.yaml
+    aka: abc
+  - uri: https://github.com/crosscompute/crosscompute-examples
+    aka: examples
+    visibility: index
+  - uri: /t/add-numbers
+    aka: add_numbers
+    visibility: search
+    hashes:
+      - sha256: abc
+
+results:
+  - path: abc/results/aaa
+    aka: aaa
+  - uri: /t/add-numbers/r/1-2
+    aka: one_two
+
+input:
+  variables:
+    - label: What is the name of your town?
+    - id: flavor
+      view: radio
+      path: variables.dictionary
+      configuration:
+        options:
+          - name: Vanilla
+            value: vanilla
+          - name: Chocolate
+            value: chocolate
+          - name: Strawberry
+            value: strawberry
+    - id: topics
+      view: checkbox
+      path: variables.dictionary
+      configuration:
+        options:
+          - value: cooking
+          - value: reading
+          - value: writing
+          - value: mathematics
+          - value: swimming
+    - id: region
+      view: map-mapbox-location
+      path: variables.dictionary
+  templates:
+    - expression: age >= 18
+
+output:
+  variables:
+    - id: document
+      view: link
+      path: document.pdf
+      configuration:
+        link-text: YOUR-LINK-TEXT
+        file-name: YOUR-FILE-NAME
+    - id: counts
+      view: table
+      path: counts.json
+    - id: demo
+      view: frame
+      path: variables.dictionary
+    - id: cards
+      view: json
+      path: cards.json
+    - id: buildings
+      view: checkbox
+      path: buildings.txt
+      configuration:
+        path: buildings.json
+      mode: input
+    - id: report
+      view: pdf
+      path: example.pdf
+    - id: region
+      view: map-mapbox
+      path: region.geojson
+      configuration:
+        style: mapbox://styles/mapbox/dark-v11
+        layers:
+          - type: fill
+            paint:
+              fill-color: blue
+          - type: circle
+            paint:
+              circle-color: red
+    - id: incidents
+      view: map-deck-screengrid
+      path: incidents.json
+      configuration:
+        style: mapbox://styles/mapbox/dark-v11
+    - id: identity
+      view: barcode
+      path: variables.dictionary
+
+debug:
+  variables:
+  templates:
+
+print:
+  variables:
+    - id: report
+      view: pdf
+      path: report.pdf
+      configuration:
+        header-footer:
+          font-family: sans-serif
+          font-size: 8pt
+          color: '#808080'
+          padding: 0.1in 0.25in
+          skip-first: true
+        page-number:
+          location: footer
+          alignment: right
+        name: '{y2 | slug}-{y3}.pdf'
+    - id: report-uri
+      view: link
+      path: report.pdf
+      label: Report URI
+      configuration:
+        path: report-uri.json
+
+views:
+  - name: map-mapbox
+    configuration:
+      style: mapbox://styles/mapbox/dark-v11
+  - name: a-view
+    package:
+      path: views/a-view
+  - name: b-view
+    package:
+      uri: https://pypi.org/project/b-view
+
+tests:
+  - folder: standard
+
+datasets:
+  - path: def.csv
+    reference:
+      uri: https://example.net/def-2024.csv
+
+environment:
+  processor: cpu
+  memory: 1gb
+  packages:
+    - uri: "https://mirrors.rpmfusion.org/free/fedora/\
+        rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"
+      manager: dnf
+  ports:
+    - id: demo
+      number: 8888
+  concurrency: process
+  interval: 30 minutes
+  # interval: 30 minutes!
+
+display:
+  templates:
+    - id: base
+      path: base.html
+    - id: live
+      path: live.html
+    - id: root
+      path: root.html
+
+authorization:
+  tokens:
+    - path: tokens.yaml
+  groups:
+    - configuration:
+        role_name: owner
+      permissions:
+        - id: add_token
+        - id: see_root
+        - id: see_tool
+        - id: see_preset
+        - id: run_tool
+    - configuration:
+        role_name: member
+      permissions:
+        - id: see_root
+        - id: see_tool
+        - id: see_preset
+          action: match

@@ -173,7 +173,7 @@ class DisplayDefinition(Definition):
 
     async def _initialize(self, **kwargs):
         self._validation_functions.extend([
-            # validate_styles,
+            validate_styles,
             # validate_templates,
             validate_pages])
 
@@ -207,6 +207,13 @@ class PortDefinition(Definition):
     async def _initialize(self, **kwargs):
         self._validation_functions.extend([
             validate_port_identifiers])
+
+
+class StyleDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self._validation_functions.extend([
+            validate_style_identifiers])
 
 
 class PageDefinition(Definition):
@@ -357,7 +364,7 @@ async def validate_tools(d):
             path = tool_folder / tool_map['path']
         else:
             raise CrossComputeConfigurationError(
-                'tool path or uri is required')
+                'tool path is required')
         try:
             tool_configuration = await load_configuration(
                 path, f'{d.locus}-{i}')
@@ -659,6 +666,12 @@ async def validate_environment_variables(d):
     return {'variable_definitions': variable_definitions}
 
 
+async def validate_styles(d):
+    style_maps = get_maps(d, 'styles')
+    style_definitions = [await StyleDefinition.load(_) for _ in style_maps]
+    return {'style_definitions': style_definitions}
+
+
 async def validate_pages(d):
     page_maps = get_maps(d, 'pages')
     page_definitions = [await PageDefinition.load(_) for _ in page_maps]
@@ -724,6 +737,18 @@ async def validate_port_identifiers(d):
     return {
         'id': port_id,
         'number': port_number}
+
+
+async def validate_style_identifiers(d):
+    path_name = d.get('path', '').strip()
+    uri = d.get('uri', '').strip()
+    if not path_name and not uri:
+        raise CrossComputeConfigurationError(
+            'style path or uri is required')
+    return {
+        'path_name': path_name,
+        'uri': uri,
+    }
 
 
 async def validate_page_identifiers(d):

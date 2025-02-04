@@ -1,0 +1,149 @@
+---
+name: Tool X
+slug: tool-x
+version: 0.0.0
+
+copyright:
+  text: >-
+    [<img src="{image_uri}" alt="{name}" loading="lazy">](
+    {owner_uri}) © {year}. Made with the [CrossCompute Analytics
+    Software Development Kit](https://docs.crosscompute.com).
+  name: CrossCompute
+  year: 2024
+  image_uri: /assets/logo.svg
+  owner_uri: https://crosscompute.com
+
+tools:
+  - path: abc/automate.yaml
+
+input:
+  variables:
+    - id: town_name
+      view: string
+      path: variables.dictionary
+      configuration:
+        suggestions:
+          - value: Springfield
+          - value: Branson
+          - value: Nixa
+          - value: Mansfield
+          - value: Independence
+    - id: age
+      view: number
+      path: variables.dictionary
+    - id: secret_code
+      view: password
+    - id: support_email
+      view: email
+    - id: problem_description
+      view: text
+      path: problem.txt
+    - id: blurb
+      view: markdown
+      path: blurb.md
+    - id: profile_photo
+      view: file
+      path: photo{index}{suffix}
+      configuration:
+        mime-types:
+          - image/jpeg
+          - image/png
+          - image/svg+xml
+  templates:
+    - path: input.md
+
+output:
+  variables:
+    - id: message
+      view: string
+      path: variables.dictionary
+    - id: count
+      view: number
+      path: variables.dictionary
+    - id: lyrics
+      view: text
+      path: lyrics.txt
+    - id: monologue
+      view: markdown
+      path: monologue.md
+    - id: logo
+      view: image
+      path: logo.svg
+  templates:
+    - path: output.md
+
+log:
+  variables:
+  templates:
+
+presets:
+  - folder: presets/standard
+  - folder: presets/{x1 | slug}-{x2}
+    name: '{x1 | title} {x2}'
+    slug: '{x1 | slug}-{x2}'
+    configuration:
+      path: presets.csv
+  - folder: presets/{x1 | slug}-{x2}
+    name: '{x1 | title} {x2}'
+    slug: '{x1 | slug}-{x2}'
+    reference:
+      folder: presets/standard
+    configuration:
+      path: presets.csv
+
+datasets:
+  - path: abc.csv
+    reference:
+      path: datasets/abc-2024.csv
+  - path: jkl.csv
+    input: replace
+    output: replace
+  - path: mno.csv
+    output: append
+  - path: pqr.csv
+
+scripts:
+  - command: >-
+      python run.py
+      {input_folder} {output_folder} {log_folder} {debug_folder}
+  - path: run.py
+  - path: run.py
+    folder: scripts
+  - path: run.ipynb
+  - function: run.plot_all
+
+environment:
+  engine: podman
+  image: python
+  packages:
+    - id: matplotlib
+      manager: pip
+    - id: turf
+      manager: npm
+    - id: ffmpeg
+      manager: dnf
+    - id: libgeos-dev
+      manager: apt
+  variables:
+    - id: GOOGLE_KEY
+
+display:
+  styles:
+    - path: style.css
+    - uri: https://cdn.jsdelivr.net/npm/pygments-css@1.0.0/default.css
+  pages:
+    - id: tool
+      design: input
+    - id: tool
+      design: output
+    - id: tool
+      design: none
+    - id: input
+      design: none
+      buttons:
+        - id: continue
+          text: Continuar
+        - id: back
+          text: Volver
+    - id: output
+      design: flat
