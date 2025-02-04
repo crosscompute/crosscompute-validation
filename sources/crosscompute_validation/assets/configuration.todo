@@ -1,8 +1,8 @@
 ---
-crosscompute: 1.0.0
+* crosscompute: 1.0.0
 
-title: Tool X - Improve health, safety, quality of life
-description: Improve health, safety, quality of life in our communities
+* title: Tool X - Improve health, safety, quality of life
+* description: Improve health, safety, quality of life in our communities
 
 copyright:
   slug: crosscompute
@@ -47,8 +47,8 @@ input:
     - id: town_name
       view: string
       path: variables.dictionary
-      label: What is the name of your town?
-      configuration:
+      * label: What is the name of your town?
+      * configuration:
         suggestions:
           - value: Springfield
           - value: Branson
@@ -64,7 +64,7 @@ input:
           - image/png
           - image/svg+xml
     - id: flavor
-      view: radio
+      * view: radio
       path: variables.dictionary
       configuration:
         options:
@@ -75,7 +75,7 @@ input:
           - name: Strawberry
             value: strawberry
     - id: topics
-      view: checkbox
+      * view: checkbox
       path: variables.dictionary
       configuration:
         options:
@@ -85,39 +85,39 @@ input:
           - value: mathematics
           - value: swimming
     - id: region
-      view: map-mapbox-location
+      * view: map-mapbox-location
       path: variables.dictionary
   templates:
-    - expression: age >= 18
+    * - expression: age >= 18
 
 output:
   variables:
     - id: document
-      view: link
+      * view: link
       path: document.pdf
       configuration:
         link-text: YOUR-LINK-TEXT
         file-name: YOUR-FILE-NAME
     - id: counts
-      view: table
+      * view: table
       path: counts.json
     - id: demo
-      view: frame
+      * view: frame
       path: variables.dictionary
     - id: cards
-      view: json
+      * view: json
       path: cards.json
     - id: buildings
-      view: checkbox
+      * view: checkbox
       path: buildings.txt
       configuration:
         path: buildings.json
       mode: input
     - id: report
-      view: pdf
+      * view: pdf
       path: example.pdf
     - id: region
-      view: map-mapbox
+      * view: map-mapbox
       path: region.geojson
       configuration:
         style: mapbox://styles/mapbox/dark-v11
@@ -129,19 +129,19 @@ output:
             paint:
               circle-color: red
     - id: incidents
-      view: map-deck-screengrid
+      * view: map-deck-screengrid
       path: incidents.json
       configuration:
         style: mapbox://styles/mapbox/dark-v11
     - id: identity
-      view: barcode
+      * view: barcode
       path: variables.dictionary
 
 debug:
   variables:
   templates:
 
-print:
+* print:
   variables:
     - id: report
       view: pdf
@@ -181,7 +181,7 @@ tests:
 datasets:
   - path: def.csv
     reference:
-      uri: https://example.net/def-2024.csv
+      * uri: https://example.net/def-2024.csv
 
 environment:
   processor: cpu
@@ -190,14 +190,14 @@ environment:
     - uri: "https://mirrors.rpmfusion.org/free/fedora/\
         rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"
       manager: dnf
-  ports:
+  * ports:
     - id: demo
       number: 8888
-  concurrency: process
-  interval: 30 minutes
-  # interval: 30 minutes!
+  * concurrency: process
+  * interval: 30 minutes
+  * # interval: 30 minutes!
 
-display:
+* display:
   pages:
     - id: tool
       design: input
@@ -222,7 +222,7 @@ display:
     - id: root
       path: root.html
 
-authorization:
+? authorization:
   tokens:
     - path: tokens.yaml
   groups:
