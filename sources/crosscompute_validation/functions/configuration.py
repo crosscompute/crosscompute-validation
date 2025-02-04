@@ -747,8 +747,7 @@ async def validate_style_identifiers(d):
             'style path or uri is required')
     return {
         'path_name': path_name,
-        'uri': uri,
-    }
+        'uri': uri}
 
 
 async def validate_page_identifiers(d):
