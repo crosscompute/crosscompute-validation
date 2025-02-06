@@ -1,4 +1,3 @@
----
 * title: Tool X - Improve health, safety, quality of life
 * description: Improve health, safety, quality of life in our communities
 
@@ -42,25 +41,12 @@ results:
 
 input:
   variables:
-    - id: town_name
-      view: string
-      path: variables.dictionary
-      ** label: What is the name of your town?
-      ** configuration:
-        suggestions:
-          - value: Springfield
-          - value: Branson
-          - value: Nixa
-          - value: Mansfield
-          - value: Independence
-    - id: profile_photo
-      view: file
-      path: photo{index}{suffix}
-      configuration:
-        mime-types:
-          - image/jpeg
-          - image/png
-          - image/svg+xml
+    - id: secret_code
+      view: password
+      * path: ENVIRONMENT
+    - id: support_email
+      view: email
+      * path: ENVIRONMENT
     - id: flavor
       * view: radio
       path: variables.dictionary
@@ -220,7 +206,7 @@ display:
     - id: root
       path: root.html
 
-? authorization:
+* authorization:
   tokens:
     - path: tokens.yaml
   groups:

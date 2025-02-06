@@ -93,7 +93,7 @@ input:
     # view specifies how to render your variable (required);
     # path specifies the file where your scripts load this variable (required);
     #   note that path is relative to the input folder;
-    #   specify ENVIRONMENT to prevent saving the variable to disk;
+    #   specify ENVIRONMENT to prevent saving the variable for subsequent runs;
     # label sets the label text above the variable view;
     # configuration customizes the look and feel of the view
     - id: town_name

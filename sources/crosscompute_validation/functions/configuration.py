@@ -23,7 +23,7 @@ from crosscompute_macros.log import (
 from crosscompute_macros.package import (
     is_equivalent_version)
 from crosscompute_macros.text import (
-    format_slug)
+    format_name, format_slug)
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
@@ -38,6 +38,7 @@ from ..constants import (
     ENGINE_NAME,
     ERROR_CONFIGURATION_NOT_FOUND,
     IMAGE_NAME,
+    PRINTER_NAMES,
     SCRIPT_LANGUAGE,
     STEP_NAMES,
     SUPPORT_EMAIL,
@@ -45,6 +46,7 @@ from ..constants import (
     TOOLKIT_NAME,
     TOOL_NAME,
     TOOL_VERSION,
+    VARIABLE_ID_PATTERN,
     VARIABLE_ID_TEMPLATE_PATTERN)
 from ..errors import (
     CrossComputeConfigurationError,
@@ -52,7 +54,9 @@ from ..errors import (
     CrossComputeError,
     CrossComputeFormatError)
 from ..settings import (
-    shell_name)
+    printer_by_name,
+    shell_name,
+    view_by_name)
 from .variable import (
     LoadableVariableView,
     load_variable_data_by_id)
@@ -96,6 +100,7 @@ class ToolDefinition(Definition):
             validate_copyright,
             validate_tools,
             validate_steps,
+            validate_prints,
             validate_presets,
             validate_datasets,
             validate_scripts,
@@ -407,6 +412,8 @@ async def validate_steps(d):
         if step_name not in d:
             continue
         step_map = d[step_name]
+        if not step_map:
+            continue
         step_definition = await StepDefinition.load(
             step_map, name=step_name, tool_definition=d)
         step_definition_by_name[step_name] = step_definition
@@ -417,6 +424,27 @@ async def validate_steps(d):
         raise CrossComputeConfigurationError(
             '"return_code" is a reserved variable')
     return {'step_definition_by_name': step_definition_by_name}
+
+
+async def validate_prints(d):
+    print_definition = d.step_definition_by_name.get('print')
+    if print_definition:
+        for variable_definition in print_definition.variable_definitions:
+            view_name = variable_definition.view_name
+            if view_name in ['link']:
+                continue
+            elif view_name not in PRINTER_NAMES:
+                raise CrossComputeConfigurationError(
+                    f'printer "{view_name}" is not supported')
+            elif view_name not in printer_by_name:
+                L.error(
+                    f'printer "{view_name}" is missing; '
+                    f'pip install crosscompute-printers-{view_name}')
+            variable_id = variable_definition.id
+            variable_configuration = variable_definition.configuration
+            process_header_footer_options(variable_id, variable_configuration)
+            process_page_number_options(variable_id, variable_configuration)
+    return {}
 
 
 async def validate_presets(d):
@@ -706,11 +734,30 @@ async def validate_pages(d):
 async def validate_variable_identifiers(d):
     variable_id = get_required_string(d, 'id', 'variable')
     view_name = get_required_string(d, 'view', 'variable')
-    variable_path = get_required_string(d, 'path', 'variable')
+    path_name = get_required_string(d, 'path', 'variable')
+    mode_name = d.get('mode', '').strip()
+    label_text = d.get('label', format_name(variable_id)).strip()
+    if not VARIABLE_ID_PATTERN.match(variable_id):
+        raise CrossComputeConfigurationError(
+            f'variable "{variable_id}" is not a valid variable id; please use '
+            'only lowercase, uppercase, numbers and underscores')
+    if view_name not in view_by_name:
+        raise CrossComputeConfigurationError(
+            f'variable "{variable_id}" view "{view_name}" is not installed or '
+            'not supported')
+    if path_name.startswith('/') or path_name.startswith('..'):
+        raise CrossComputeConfigurationError(
+            f'variable "{variable_id}" path "{path_name}" must be within the '
+            'folder')
+    if mode_name and mode_name not in ['input']:
+        raise CrossComputeConfigurationError(
+            f'variable "{variable_id}" mode must be "input" if specified')
     return {
         'id': variable_id,
         'view_name': view_name,
-        'path_name': variable_path}
+        'path_name': path_name,
+        'mode_name': mode_name,
+        'label_text': label_text}
 
 
 async def validate_variable_configuration(d):
@@ -721,14 +768,6 @@ async def validate_variable_configuration(d):
         if not p.endswith('.json'):
             raise CrossComputeConfigurationError(
                 f'variable configuration path "{p}" suffix must be ".json"')
-    if d.step_name == 'print':
-        variable_id = d.id
-        view_name = d.view_name
-        if view_name == 'link':
-            pass
-        else:
-            process_header_footer_options(variable_id, c)
-            process_page_number_options(variable_id, c)
     return {'configuration': c}
 
 

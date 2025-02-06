@@ -19,19 +19,34 @@ tools:
 
 input:
   variables:
+    - id: town_name
+      view: string
+      path: variables.dictionary
+      label: What is the name of your town?
+      configuration:
+        suggestions:
+          - value: Springfield
+          - value: Branson
+          - value: Nixa
+          - value: Mansfield
+          - value: Independence
     - id: age
       view: number
       path: variables.dictionary
-    - id: secret_code
-      view: password
-    - id: support_email
-      view: email
     - id: problem_description
       view: text
       path: problem.txt
     - id: blurb
       view: markdown
       path: blurb.md
+    - id: profile_photo
+      view: file
+      path: photo{index}{suffix}
+      configuration:
+        mime-types:
+          - image/jpeg
+          - image/png
+          - image/svg+xml
   templates:
     - path: input.md
 
