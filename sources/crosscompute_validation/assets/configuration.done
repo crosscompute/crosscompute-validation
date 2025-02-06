@@ -1,4 +1,5 @@
 ---
+crosscompute: 1.0.0
 name: Tool X
 slug: tool-x
 version: 0.0.0
