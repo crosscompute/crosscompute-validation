@@ -2,7 +2,12 @@
 * description: Improve health, safety, quality of life in our communities
 
 copyright:
-  slug: crosscompute
+  owners:
+    - name: CrossCompute
+      slug: crosscompute
+      uri: https://crosscompute.com
+  dates:
+    - year: 2024
 
 network:
   markets:

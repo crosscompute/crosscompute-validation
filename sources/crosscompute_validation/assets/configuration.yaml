@@ -18,17 +18,14 @@ description: Improve health, safety, quality of life in our communities
 # version should increment after you make changes to your tool
 version: 0.0.0
 
-# copyright declares who owns the rights to this tool or toolkit
+# copyright declares who owns the rights to this tool or kit
 copyright:
-  text: >-
-    [<img src="{image_uri}" alt="{name}" loading="lazy">](
-    {owner_uri}) © {year}. Made with the [CrossCompute Analytics
-    Software Development Kit](https://docs.crosscompute.com).
-  name: CrossCompute
-  slug: crosscompute
-  year: 2024
-  image_uri: /assets/logo.svg
-  owner_uri: https://crosscompute.com
+  owners:
+    - name: CrossCompute
+      slug: crosscompute
+      uri: https://crosscompute.com
+  dates:
+    - year: 2024
 
 # network declares how your server coordinates with other servers
 network:
@@ -45,7 +42,7 @@ network:
     - uri: https://example.com/network-keys.txt
     - path: network-keys.txt
 
-# pricing specifies how you want to price your tool or toolkit
+# pricing specifies how you want to price your tool or kit
 pricing:
   # account is where the customer sends your subscription payment
   account: nano_abc
@@ -56,7 +53,7 @@ pricing:
   # currency is the ISO 4217 code or cryptocurrency abbreviation
   currency: xno
 
-# tools let you include other tools and define a toolkit
+# tools let you include other tools and define a kit
 tools:
   # path specifies the location of the tool to include;
   # aka references this tool in your templates;
