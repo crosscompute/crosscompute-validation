@@ -2,7 +2,7 @@
 import csv
 from collections import Counter
 from logging import getLogger
-from os import environ
+from os import getenv
 from os.path import basename
 from pathlib import Path
 
@@ -55,7 +55,6 @@ from ..errors import (
     CrossComputeFormatError)
 from ..settings import (
     printer_by_name,
-    shell_name,
     view_by_name)
 from .variable import (
     LoadableVariableView,
@@ -710,7 +709,7 @@ async def validate_environment_variables(d):
         _) for _ in variable_maps]
     for variable_definition in variable_definitions:
         variable_id = variable_definition['id']
-        if variable_id not in environ:
+        if getenv(variable_id) is None:
             L.error('tool environment is missing variable "%s"', variable_id)
     assert_unique_values(
         [_['id'] for _ in variable_definitions],
@@ -927,7 +926,7 @@ def prepare_script_path(script_path):
                 'target_path': new_path,
                 'notebook_path': path}
         case '.sh':
-            command_string = f'{shell_name} "{path}"'
+            command_string = f'bash "{path}"'
             preparation_map = {}
         case _:
             suffixes_string = ' '.join(['.py', '.ipynb'])
