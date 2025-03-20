@@ -5,6 +5,10 @@ from crosscompute_macros.disk import (
     make_link,
     remove_path)
 
+from crosscompute_validation.constants import (
+    COPYRIGHT_TEXT,
+    COPYRIGHT_URI_AND_IMAGE_TEXT,
+    COPYRIGHT_URI_TEXT)
 from crosscompute_validation.errors import (
     CrossComputeConfigurationError)
 from crosscompute_validation.functions.configuration import (
@@ -13,7 +17,6 @@ from crosscompute_validation.functions.configuration import (
     validate_copyright_identifiers,
     validate_paths,
     validate_steps)
-from crosscompute_validation.settings import C
 
 
 @mark.asyncio
@@ -55,11 +58,11 @@ async def test_validate_copyright_identifiers():
     copyright_definition.tool_definition = {}
     await f(copyright_definition, copyright_text)
     del copyright_definition['text']
-    await f(copyright_definition, C.copyright_uri_and_image_text)
+    await f(copyright_definition, COPYRIGHT_URI_AND_IMAGE_TEXT)
     del copyright_definition['image_uri']
-    await f(copyright_definition, C.copyright_uri_text)
+    await f(copyright_definition, COPYRIGHT_URI_TEXT)
     del copyright_definition['owner_uri']
-    await f(copyright_definition, C.copyright_text)
+    await f(copyright_definition, COPYRIGHT_TEXT)
     del copyright_definition['year']
     await f(copyright_definition, '')
 

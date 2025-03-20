@@ -27,12 +27,34 @@ from crosscompute_macros.text import (
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
+from ..constants import (
+    CONFIGURATION_NAME,
+    COPYRIGHT_TEXT,
+    COPYRIGHT_URI_AND_IMAGE_TEXT,
+    COPYRIGHT_URI_TEXT,
+    DATA_VALUE,
+    ENGINE_NAME,
+    ERROR_CONFIGURATION_NOT_FOUND,
+    IMAGE_NAME,
+    KIT_NAME,
+    PRINTER_NAMES,
+    PROTOCOL_VERSION,
+    SCRIPT_LANGUAGE,
+    STEP_INPUT,
+    STEP_NAMES,
+    SUPPORT_EMAIL,
+    TOOL_NAME,
+    TOOL_VERSION,
+    VARIABLE_ID_PATTERN,
+    VARIABLE_ID_TEMPLATE_PATTERN)
 from ..errors import (
     CrossComputeConfigurationError,
     CrossComputeDataError,
     CrossComputeError,
     CrossComputeFormatError)
-from ..settings import C, E
+from ..settings import (
+    printer_by_name,
+    view_by_name)
 from .variable import (
     LoadableVariableView,
     load_variable_data_by_id)
@@ -251,7 +273,7 @@ async def load_configuration_from_path(path, locus):
 
 async def load_configuration_from_folder(folder, locus):
     relative_paths = await list_paths(folder)
-    default_name = C.configuration_name
+    default_name = CONFIGURATION_NAME
     if default_name in relative_paths:
         relative_paths.remove(default_name)
         relative_paths.insert(0, default_name)
@@ -269,7 +291,7 @@ async def load_configuration_from_folder(folder, locus):
     else:
         raise CrossComputeError(
             'configuration was not found',
-            code=C.error_configuration_not_found)
+            code=ERROR_CONFIGURATION_NOT_FOUND)
     return configuration
 
 
@@ -308,7 +330,6 @@ async def validate_protocol(d):
     if 'crosscompute' not in d:
         raise CrossComputeError('crosscompute protocol version is missing')
     protocol_version = d['crosscompute'].strip()
-    PROTOCOL_VERSION = C.protocol_version
     if not protocol_version:
         raise CrossComputeConfigurationError(
             'crosscompute protocol version is required')
@@ -348,10 +369,10 @@ async def validate_paths(d):
 
 async def validate_tool_identifiers(d):
     name = d.get('name', (
-        C.tool_name if 'output' in d else C.kit_name
+        TOOL_NAME if 'output' in d else KIT_NAME
     ).replace('X', d.locus)).strip()
     slug = d.get('slug', format_slug(name)).strip()
-    version = d.get('version', C.tool_version).strip()
+    version = d.get('version', TOOL_VERSION).strip()
     return {'name': name, 'slug': slug, 'version': version}
 
 
@@ -386,7 +407,7 @@ async def validate_tools(d):
 async def validate_steps(d):
     step_definition_by_name = {}
     tool_variable_ids = []
-    for step_name in C.step_names:
+    for step_name in STEP_NAMES:
         if step_name not in d:
             continue
         step_map = d[step_name]
@@ -411,10 +432,10 @@ async def validate_prints(d):
             view_name = variable_definition.view_name
             if view_name in ['link']:
                 continue
-            elif view_name not in C.printer_names:
+            elif view_name not in PRINTER_NAMES:
                 raise CrossComputeConfigurationError(
                     f'printer "{view_name}" is not supported')
-            elif view_name not in E.printer_by_name:
+            elif view_name not in printer_by_name:
                 L.error(
                     f'printer "{view_name}" is missing; '
                     f'pip install crosscompute-printers-{view_name}')
@@ -484,11 +505,11 @@ async def validate_copyright_identifiers(d):
     elif copyright_name and copyright_year:
         if copyright_owner_uri:
             if copyright_image_uri:
-                copyright_text = C.copyright_uri_and_image_text
+                copyright_text = COPYRIGHT_URI_AND_IMAGE_TEXT
             else:
-                copyright_text = C.copyright_uri_text
+                copyright_text = COPYRIGHT_URI_TEXT
         else:
-            copyright_text = C.copyright_text
+            copyright_text = COPYRIGHT_TEXT
     else:
         copyright_text = ''
     try:
@@ -521,7 +542,7 @@ async def validate_preset_identifiers(d):
     folder = get_text(d, 'folder')
     name = get_text(d, 'name', basename(folder))
     slug = get_text(d, 'slug', name)
-    data_by_id = d.data.get(C.step_input, {})
+    data_by_id = d.data.get(STEP_INPUT, {})
     try:
         folder = format_text(folder, data_by_id)
         name = format_text(name, data_by_id)
@@ -569,14 +590,14 @@ async def validate_preset_configuration(d):
             'input')
         async for _ in yield_data_by_id(path, input_variable_definitions):
             data = {
-                C.step_input: reference_data_by_id | _ | preset_configuration}
+                STEP_INPUT: reference_data_by_id | _ | preset_configuration}
             preset_definition = await PresetDefinition.load(
                 d, tool_definition=tool_definition, data=data)
             preset_definitions.extend(preset_definition.preset_definitions)
     else:
         data_by_id = await tool_definition.load_data_by_id(
             d.folder_name, 'input')
-        d.data[C.step_input] = d.data.get(C.step_input, {
+        d.data[STEP_INPUT] = d.data.get(STEP_INPUT, {
         }) | reference_data_by_id | preset_configuration | data_by_id
         preset_definitions.append(d)
     return {'preset_definitions': preset_definitions}
@@ -636,7 +657,7 @@ async def validate_script_identifiers(d):
         method_names.append('path')
     if 'function' in d:
         command_string, preparation_map = prepare_script_function(
-            d.get('language', C.script_language), d['function'])
+            d.get('language', SCRIPT_LANGUAGE), d['function'])
         method_names.append('function')
     if not method_names:
         raise CrossComputeConfigurationError(
@@ -653,8 +674,8 @@ async def validate_script_identifiers(d):
 
 async def validate_engine(d):
     return {
-        'engine_name': d.get('engine', C.engine_name),
-        'parent_image_name': d.get('image', C.image_name)}
+        'engine_name': d.get('engine', ENGINE_NAME),
+        'parent_image_name': d.get('image', IMAGE_NAME)}
 
 
 async def validate_packages(d):
@@ -717,11 +738,11 @@ async def validate_variable_identifiers(d):
     path_name = get_required_string(d, 'path', 'variable')
     mode_name = d.get('mode', '').strip()
     label_text = d.get('label', format_name(variable_id)).strip()
-    if not C.variable_id_pattern.match(variable_id):
+    if not VARIABLE_ID_PATTERN.match(variable_id):
         raise CrossComputeConfigurationError(
             f'variable "{variable_id}" is not a valid variable id; please use '
             'only lowercase, uppercase, numbers and underscores')
-    if view_name not in E.view_by_name:
+    if view_name not in view_by_name:
         raise CrossComputeConfigurationError(
             f'variable "{variable_id}" view "{view_name}" is not installed or '
             'not supported')
@@ -837,7 +858,7 @@ async def yield_data_by_id_from_csv(path, variable_definitions):
             keys = [_.strip() for _ in next(csv_reader)]
             for values in csv_reader:
                 data_by_id = await parse_data_by_id({
-                    k: {C.data_value: v} for k, v in zip(keys, values)
+                    k: {DATA_VALUE: v} for k, v in zip(keys, values)
                 }, variable_definitions)
                 if data_by_id.get('#') == '#':
                     continue
@@ -866,7 +887,7 @@ async def yield_data_by_id_from_txt(path, variable_definitions):
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
-                data_by_id = {variable_id: {C.data_value: line}}
+                data_by_id = {variable_id: {DATA_VALUE: line}}
                 data_by_id = await parse_data_by_id(
                     data_by_id, variable_definitions)
                 yield data_by_id
@@ -881,16 +902,16 @@ async def parse_data_by_id(data_by_id, variable_definitions):
             variable_data = data_by_id[variable_id]
         except KeyError:
             continue
-        if C.data_valuenot in variable_data:
+        if DATA_VALUE not in variable_data:
             continue
-        variable_value = variable_data[C.data_value]
+        variable_value = variable_data[DATA_VALUE]
         variable_view = LoadableVariableView.get_from(variable_definition)
         try:
             variable_value = await variable_view.parse(variable_value)
         except CrossComputeDataError as e:
             e.variable_id = variable_id
             raise
-        variable_data[C.data_value] = variable_value
+        variable_data[DATA_VALUE] = variable_value
     return data_by_id
 
 
@@ -913,7 +934,7 @@ def prepare_script_path(script_path):
             suffixes_string = ' '.join(['.py', '.ipynb'])
             raise CrossComputeConfigurationError(
                 f'script path suffix can be one of {suffixes_string}; '
-                f'message {C.support_email} to request support for '
+                f'message {SUPPORT_EMAIL} to request support for '
                 'more suffixes')
     return command_string, preparation_map
 
@@ -930,7 +951,7 @@ def prepare_script_function(script_language, function_string):
             languages_string = ' '.join(['python'])
             raise CrossComputeConfigurationError(
                 f'script language can be one of {languages_string}; '
-                f'message {C.support_email} to request support for '
+                f'message {SUPPORT_EMAIL} to request support for '
                 'more languages')
     return command_string, preparation_map
 
@@ -1023,7 +1044,7 @@ def format_text(text, data_by_id):
             raise CrossComputeConfigurationError(
                 f'preset "{text}" missing value',
                 variable_id=variable_id)
-        value = variable_data.get(C.data_value, '')
+        value = variable_data.get(DATA_VALUE, '')
         try:
             value = apply_functions(value, terms[1:], {
                 'slug': format_slug,
@@ -1034,7 +1055,7 @@ def format_text(text, data_by_id):
                 f'"{matching_inner_text}"')
         return str(value)
 
-    return C.variable_id_template_pattern.sub(f, text)
+    return VARIABLE_ID_TEMPLATE_PATTERN.sub(f, text)
 
 
 def assert_unique_values(values, description):

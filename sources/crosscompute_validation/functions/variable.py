@@ -14,9 +14,16 @@ from crosscompute_macros.log import (
 from crosscompute_macros.package import (
     import_attribute)
 
+from ..constants import (
+    DATA_CONFIGURATION,
+    DATA_PATH,
+    DATA_VALUE,
+    RAW_DATA_BYTE_COUNT,
+    RAW_DATA_CACHE_LENGTH)
 from ..errors import (
     CrossComputeDataError)
-from ..settings import C, E
+from ..settings import (
+    view_by_name)
 from .disk import (
     get_matching_paths)
 
@@ -29,7 +36,7 @@ class LoadableVariableView:
     def get_from(Class, variable):
         view_name = variable.view_name
         try:
-            View = E.view_by_name[view_name]
+            View = view_by_name[view_name]
         except KeyError:
             L.error(
                 'view "%s" is not installed and is needed by variable "%s"',
@@ -61,10 +68,10 @@ class LoadableNumberView(LoadableVariableView):
 def initialize_view_by_name(d=None, with_entry_points=False):
     if with_entry_points:
         for entry_point in entry_points().select(group='crosscompute.views'):
-            E.view_by_name[entry_point.name] = import_attribute(
+            view_by_name[entry_point.name] = import_attribute(
                 entry_point.value)
     if d:
-        E.view_by_name.update(d)
+        view_by_name.update(d)
 
 
 async def load_variable_data_by_id(folder, variables):
@@ -86,7 +93,7 @@ async def load_variable_data(folder, variable, with_configuration_path=True):
     variable_path = variable.path_name
     path = join(folder, variable_path)
     if '{index}' in variable_path:
-        return {C.data_path: path}
+        return {DATA_PATH: path}
     variable_id = variable.id
     try:
         raw_data = await raw_data_cache.get(path)
@@ -94,7 +101,7 @@ async def load_variable_data(folder, variable, with_configuration_path=True):
         e.variable_id = variable_id
         raise
     if path.endswith('.dictionary'):
-        variable_value_by_id = raw_data[C.data_value]
+        variable_value_by_id = raw_data[DATA_VALUE]
         variable_data = load_variable_data_from(
             variable_value_by_id, variable_id)
         await restore_data_configuration(
@@ -106,9 +113,9 @@ async def load_variable_data(folder, variable, with_configuration_path=True):
             variable_data, folder, variable, {}, with_configuration_path)
     else:
         variable_data = raw_data
-    if C.data_value in variable_data:
-        variable_data[C.data_value] = await LoadableVariableView.get_from(
-            variable).parse(variable_data[C.data_value])
+    if DATA_VALUE in variable_data:
+        variable_data[DATA_VALUE] = await LoadableVariableView.get_from(
+            variable).parse(variable_data[DATA_VALUE])
     return variable_data
 
 
@@ -118,7 +125,7 @@ def load_variable_data_from(variable_value_by_id, variable_id):
     except KeyError:
         raise CrossComputeDataError(
             'value was not found', variable_id=variable_id)
-    return {C.data_value: variable_value}
+    return {DATA_VALUE: variable_value}
 
 
 async def restore_data_configuration(
@@ -140,7 +147,7 @@ async def restore_data_configuration(
         custom_path = join(folder, variable_configuration['path'])
         await update_data_configuration(data_configuration, custom_path)
     if data_configuration:
-        variable_data[C.data_configuration] = data_configuration
+        variable_data[DATA_CONFIGURATION] = data_configuration
 
 
 async def update_data_configuration(data_configuration, path):
@@ -163,7 +170,7 @@ async def load_raw_data(path):
         case 1:
             path = matching_paths[0]
         case _:
-            return {C.data_path: path}
+            return {DATA_PATH: path}
     suffix = splitext(path)[1]
     if suffix == '.dictionary':
         return await load_dictionary_data(path)
@@ -171,7 +178,7 @@ async def load_raw_data(path):
         return await load_file_data(path, load_raw_text)
     if suffix in ['.geojson', '.json']:
         return await load_file_data(path, load_raw_json)
-    return {C.data_path: path}
+    return {DATA_PATH: path}
 
 
 async def load_dictionary_data(path):
@@ -183,21 +190,21 @@ async def load_dictionary_data(path):
         raise CrossComputeDataError(f'json expected; {e}', path=path)
     if not isinstance(value, dict):
         raise CrossComputeDataError('dictionary expected', path=path)
-    return {C.data_value: value}
+    return {DATA_VALUE: value}
 
 
 async def load_file_data(path, load):
     try:
         byte_count = await get_byte_count(path)
-        if byte_count > C.raw_data_byte_count:
-            return {C.data_path: path}
+        if byte_count > RAW_DATA_BYTE_COUNT:
+            return {DATA_PATH: path}
         value = await load(path)
     except OSError as e:
         raise CrossComputeDataError(e, path=path)
-    return {C.data_value: value}
+    return {DATA_VALUE: value}
 
 
 raw_data_cache = FileCache(
     load=load_raw_data,
-    length=C.raw_data_cache_length)
+    length=RAW_DATA_CACHE_LENGTH)
 L = getLogger(__name__)
