@@ -27,12 +27,12 @@ from crosscompute_macros.text import (
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
-from .. import C, E
 from ..errors import (
     CrossComputeConfigurationError,
     CrossComputeDataError,
     CrossComputeError,
     CrossComputeFormatError)
+from ..settings import C, E
 from .variable import (
     LoadableVariableView,
     load_variable_data_by_id)

@@ -5,7 +5,6 @@ from crosscompute_macros.disk import (
     make_link,
     remove_path)
 
-from crosscompute_validation import C
 from crosscompute_validation.errors import (
     CrossComputeConfigurationError)
 from crosscompute_validation.functions.configuration import (
@@ -14,6 +13,7 @@ from crosscompute_validation.functions.configuration import (
     validate_copyright_identifiers,
     validate_paths,
     validate_steps)
+from crosscompute_validation.settings import C
 
 
 @mark.asyncio

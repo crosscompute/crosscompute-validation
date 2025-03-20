@@ -5,11 +5,11 @@ from aiofiles import open
 
 from crosscompute_macros.abstract import (
     Clay)
-from crosscompute_validation import C
 from crosscompute_validation.functions.variable import (
     LoadableNumberView,
     initialize_view_by_name,
     load_variable_data)
+from crosscompute_validation.settings import C
 
 
 @pytest.mark.asyncio

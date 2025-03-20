@@ -14,9 +14,9 @@ from crosscompute_macros.log import (
 from crosscompute_macros.package import (
     import_attribute)
 
-from .. import C, E
 from ..errors import (
     CrossComputeDataError)
+from ..settings import C, E
 from .disk import (
     get_matching_paths)
 
