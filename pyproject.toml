@@ -40,3 +40,6 @@ Issues = "https://github.com/crosscompute/crosscompute-validation/issues"
 
 [tool.hatch.build]
 packages = ["sources/crosscompute_validation"]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "session"

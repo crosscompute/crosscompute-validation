@@ -1,4 +1,3 @@
-import json
 from importlib.metadata import entry_points
 from logging import getLogger
 from os.path import join, splitext
@@ -9,8 +8,9 @@ from crosscompute_macros.disk import (
     is_existing_path,
     load_raw_json,
     load_raw_text)
-from crosscompute_macros.log import (
-    redact_path)
+from crosscompute_macros.error import (
+    DiskError,
+    ParsingError)
 from crosscompute_macros.package import (
     import_attribute)
 
@@ -153,10 +153,8 @@ async def restore_data_configuration(
 async def update_data_configuration(data_configuration, path):
     try:
         data_configuration.update(await load_raw_json(path))
-    except OSError as e:
-        L.error(f'path "{redact_path(path)}" is not accessible; {e}')
-    except json.JSONDecodeError as e:
-        L.error(f'path "{redact_path(path)}" is not valid json; {e}')
+    except (DiskError, ParsingError) as e:
+        L.error(e)
 
 
 async def load_raw_data(path):
@@ -184,10 +182,8 @@ async def load_raw_data(path):
 async def load_dictionary_data(path):
     try:
         value = await load_raw_json(path)
-    except OSError as e:
-        raise CrossComputeDataError(f'file does not load; {e}', path=path)
-    except json.JSONDecodeError as e:
-        raise CrossComputeDataError(f'json expected; {e}', path=path)
+    except (DiskError, ParsingError) as e:
+        raise CrossComputeDataError(e)
     if not isinstance(value, dict):
         raise CrossComputeDataError('dictionary expected', path=path)
     return {DATA_VALUE: value}
@@ -199,8 +195,8 @@ async def load_file_data(path, load):
         if byte_count > RAW_DATA_BYTE_COUNT:
             return {DATA_PATH: path}
         value = await load(path)
-    except OSError as e:
-        raise CrossComputeDataError(e, path=path)
+    except (DiskError, ParsingError) as e:
+        raise CrossComputeDataError(e)
     return {DATA_VALUE: value}
 
 

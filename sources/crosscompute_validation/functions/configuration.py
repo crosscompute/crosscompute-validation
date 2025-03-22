@@ -15,6 +15,9 @@ from crosscompute_macros.disk import (
     is_link_path,
     is_path_in_folder,
     list_paths)
+from crosscompute_macros.error import (
+    DiskError,
+    ParsingError)
 from crosscompute_macros.iterable import (
     apply_functions,
     find_item)
@@ -24,8 +27,8 @@ from crosscompute_macros.package import (
     is_equivalent_version)
 from crosscompute_macros.text import (
     format_name, format_slug)
-from ruamel.yaml import YAML
-from ruamel.yaml.error import YAMLError
+from crosscompute_macros.yaml import (
+    load_raw_yaml)
 
 from ..constants import (
     CONFIGURATION_NAME,
@@ -298,9 +301,13 @@ async def load_configuration_from_folder(folder, locus):
 async def load_raw_configuration(configuration_path, with_comments=False):
     configuration_format = get_configuration_format(configuration_path)
     load = {
-        'yaml': load_raw_configuration_yaml,
+        'yaml': load_raw_yaml,
     }[configuration_format]
-    return await load(configuration_path, with_comments)
+    try:
+        configuration = await load(configuration_path, with_comments)
+    except (DiskError, ParsingError) as e:
+        raise CrossComputeConfigurationError(e)
+    return configuration
 
 
 def get_configuration_format(path):
@@ -314,16 +321,6 @@ def get_configuration_format(path):
         raise CrossComputeFormatError(
             f'file suffix "{suffix}" is not supported')
     return configuration_format
-
-
-async def load_raw_configuration_yaml(configuration_path, with_comments=False):
-    yaml = YAML(typ='rt' if with_comments else 'safe')
-    try:
-        async with open(configuration_path, mode='rt') as f:
-            configuration = yaml.load(await f.read())
-    except (OSError, YAMLError) as e:
-        raise CrossComputeConfigurationError(e)
-    return configuration or {}
 
 
 async def validate_protocol(d):
