@@ -18,14 +18,6 @@ TOOL_VERSION = '0.0.0'
 STEP_NAMES = 'input', 'log', 'output', 'debug', 'print'
 
 
-COPYRIGHT_URI_AND_IMAGE_TEXT = '''\
-[<img src="{image_uri}" alt="{name}" loading="lazy">]({owner_uri}) © {year}'''
-COPYRIGHT_URI_TEXT = '''\
-[{name}]({owner_uri}) © {year}'''
-COPYRIGHT_TEXT = '''\
-{name} © {year}'''
-
-
 VARIABLE_ID_PATTERN = re.compile(r'[a-zA-Z0-9_]+$')
 VARIABLE_ID_TEMPLATE_PATTERN = re.compile(r'{ *([a-zA-Z0-9_| ]+?) *}')
 

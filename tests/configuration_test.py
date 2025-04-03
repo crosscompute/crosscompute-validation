@@ -5,16 +5,10 @@ from crosscompute_macros.disk import (
     make_link,
     remove_path)
 
-from crosscompute_validation.constants import (
-    COPYRIGHT_TEXT,
-    COPYRIGHT_URI_AND_IMAGE_TEXT,
-    COPYRIGHT_URI_TEXT)
 from crosscompute_validation.errors import (
     CrossComputeConfigurationError)
 from crosscompute_validation.functions.configuration import (
-    CopyrightDefinition,
     Definition,
-    validate_copyright_identifiers,
     validate_paths,
     validate_steps)
 
@@ -42,29 +36,6 @@ async def test_validate_paths(tmpdir):
     async with open(tmpdir / 'a', 'wt') as f:
         await f.write('A')
     await validate_paths(definition)
-
-
-@mark.asyncio
-async def test_validate_copyright_identifiers():
-    async def f(copyright_map, attribution_text):
-        d = await validate_copyright_identifiers(copyright_map)
-        assert d['text'] == attribution_text.format(**copyright_map)
-    copyright_text = '{name} {year} {owner_uri} {image_uri}'
-    with raises(CrossComputeConfigurationError):
-        await validate_copyright_identifiers({'text': copyright_text})
-    copyright_definition = CopyrightDefinition({
-        'name': 'X', 'year': 1, 'owner_uri': 'https://example.com',
-        'image_uri': 'https://example.com/image.svg', 'text': copyright_text})
-    copyright_definition.tool_definition = {}
-    await f(copyright_definition, copyright_text)
-    del copyright_definition['text']
-    await f(copyright_definition, COPYRIGHT_URI_AND_IMAGE_TEXT)
-    del copyright_definition['image_uri']
-    await f(copyright_definition, COPYRIGHT_URI_TEXT)
-    del copyright_definition['owner_uri']
-    await f(copyright_definition, COPYRIGHT_TEXT)
-    del copyright_definition['year']
-    await f(copyright_definition, '')
 
 
 @mark.asyncio

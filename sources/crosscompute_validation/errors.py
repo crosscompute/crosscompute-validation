@@ -5,48 +5,40 @@ from crosscompute_macros.log import (
 class CrossComputeError(Exception):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args)
-        self.__dict__.update(kwargs)
-
-    def __getattr__(self, name):
-        return self._get_inner_dict().get(name)
+        d = {}
+        if len(args):
+            arg = args[0]
+            if isinstance(arg, CrossComputeError):
+                d.update(arg.__dict__)
+            else:
+                d['message'] = str(arg)
+        self.__dict__.update(d | kwargs)
 
     def __str__(self):
-        texts = [super().__str__()]
-        d = self.__dict__
-        if 'path' in d:
-            x = redact_path(d['path'])
+        texts = []
+        if hasattr(self, 'message'):
+            texts.append(self.message)
+        if hasattr(self, 'path'):
+            x = redact_path(self.path)
             texts.append(f'path="{x}"')
-        if 'variable_id' in d:
-            x = d['variable_id']
+        if hasattr(self, 'variable_id'):
+            x = self.variable_id
             texts.append(f'variable_id="{x}"')
-        if 'uri' in d:
-            x = d['uri']
+        if hasattr(self, 'uri'):
+            x = self.uri
             texts.append(f'uri="{x}"')
-        if 'code' in d:
-            x = d['code']
+        if hasattr(self, 'code'):
+            x = self.code
             texts.append(f'code={x}')
-        if 'tool' in d:
-            x = d['tool']
+        if hasattr(self, 'tool'):
+            x = self.tool
             texts.extend([
                 f'tool_name="{x.name}"',
                 f'tool_version="{x.version}"'])
         return '; '.join(texts)
 
-    def _get_inner_dict(self):
-        args = self.args
-        if args:
-            arg = args[0]
-            if isinstance(arg, Exception):
-                return arg.__dict__
-        return {}
-
     def get_map(self):
         d = {}
-        try:
-            d['message'] = self.args[0]
-        except IndexError:
-            pass
         for k, v in self.__dict__.items():
             if k == 'tool':
                 d['tool_name'] = v.name

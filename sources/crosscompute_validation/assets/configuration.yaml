@@ -18,14 +18,12 @@ description: Improve health, safety, quality of life in our communities
 # version should increment after you make changes to your tool
 version: 0.0.0
 
-# copyright declares who owns the rights to this tool or kit
-copyright:
-  owners:
-    - name: CrossCompute
-      slug: crosscompute
-      uri: https://crosscompute.com
-  dates:
-    - year: 2024
+# copyrights declare who owns this tool or kit
+copyrights:
+  - name: CrossCompute
+    slug: crosscompute
+    years:
+      - 2024
 
 # network declares how your server coordinates with other servers
 network:

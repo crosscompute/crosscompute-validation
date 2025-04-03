@@ -32,9 +32,6 @@ from crosscompute_macros.yaml import (
 
 from ..constants import (
     CONFIGURATION_NAME,
-    COPYRIGHT_TEXT,
-    COPYRIGHT_URI_AND_IMAGE_TEXT,
-    COPYRIGHT_URI_TEXT,
     DATA_VALUE,
     ENGINE_NAME,
     ERROR_CONFIGURATION_NOT_FOUND,
@@ -126,7 +123,6 @@ class ToolDefinition(Definition):
 class CopyrightDefinition(Definition):
 
     async def _initialize(self, **kwargs):
-        self.tool_definition = kwargs['tool_definition']
         self._validation_functions.extend([
             validate_copyright_identifiers])
 
@@ -253,10 +249,10 @@ async def load_configuration(path_or_folder, locus='0'):
             path_or_folder, locus)
     elif not await is_existing_path(path_or_folder):
         raise CrossComputeConfigurationError(
-            f'"{path_or_folder}" does not exist')
+            f'path "{redact_path(path_or_folder)}" does not exist')
     else:
         raise CrossComputeFormatError(
-            f'"{path_or_folder}" must be a path or folder')
+            f'path "{redact_path(path_or_folder)}" must be a file or folder')
     return configuration
 
 
@@ -293,8 +289,7 @@ async def load_configuration_from_folder(folder, locus):
         break
     else:
         raise CrossComputeError(
-            'configuration was not found',
-            code=ERROR_CONFIGURATION_NOT_FOUND)
+            'configuration was not found', code=ERROR_CONFIGURATION_NOT_FOUND)
     return configuration
 
 
@@ -349,10 +344,12 @@ async def validate_paths(d):
             try:
                 path = folder / v
             except TypeError:
-                raise CrossComputeConfigurationError(f'"{k}" must be a string')
+                raise CrossComputeConfigurationError(
+                    f'{k} "{redact_path(v)}" must be a string')
             if not await is_path_in_folder(path, folder):
                 raise CrossComputeConfigurationError(
-                    f'path "{v}" must be in folder "{redact_path(folder)}"')
+                    f'{k} "{redact_path(v)}" must be in folder '
+                    f'"{redact_path(folder)}"')
         elif isinstance(v, dict):
             packs.extend(v.items())
         elif isinstance(v, list):
@@ -374,10 +371,10 @@ async def validate_tool_identifiers(d):
 
 
 async def validate_copyright(d):
-    copyright_map = get_map(d, 'copyright')
-    copyright_definition = await CopyrightDefinition.load(
-        copyright_map, tool_definition=d)
-    return {'copyright_definition': copyright_definition}
+    copyright_maps = get_maps(d, 'copyright')
+    copyright_definitions = [await CopyrightDefinition.load(
+        _) for _ in copyright_maps]
+    return {'copyright_definitions': copyright_definitions}
 
 
 async def validate_tools(d):
@@ -389,7 +386,7 @@ async def validate_tools(d):
             path = tool_folder / tool_map['path']
         else:
             raise CrossComputeConfigurationError(
-                'tool path is required')
+                'path is required for each tool')
         try:
             tool_configuration = await load_configuration(
                 path, f'{d.locus}-{i}')
@@ -492,33 +489,13 @@ async def validate_display(d):
 
 
 async def validate_copyright_identifiers(d):
-    # TODO: Support multiple copyright owners
-    copyright_name = d.get('name')
-    copyright_year = d.get('year')
-    copyright_image_uri = d.get('image_uri')
-    copyright_owner_uri = d.get('owner_uri')
-    if 'text' in d:
-        copyright_text = d.get('text')
-    elif copyright_name and copyright_year:
-        if copyright_owner_uri:
-            if copyright_image_uri:
-                copyright_text = COPYRIGHT_URI_AND_IMAGE_TEXT
-            else:
-                copyright_text = COPYRIGHT_URI_TEXT
-        else:
-            copyright_text = COPYRIGHT_TEXT
-    else:
-        copyright_text = ''
-    try:
-        copyright_text = copyright_text.format(**d)
-    except KeyError as e:
-        raise CrossComputeConfigurationError(
-            f'copyright "{e}" is specified in text but undefined')
-    copyright_text = copyright_text.strip()
-    if not copyright_text and 'output' in d.tool_definition:
-        raise CrossComputeConfigurationError(
-            'copyright is required, either as text or name and year')
-    return {'text': copyright_text}
+    copyright_name = get_required_string(d, 'name', 'copyright')
+    copyright_slug = get_required_string(d, 'slug', 'copyright')
+    copyright_years = get_required_integers(d, 'years', 'copyright')
+    return {
+        'name': copyright_name,
+        'slug': copyright_slug,
+        'years': copyright_years}
 
 
 async def validate_step_variables(d):
@@ -979,14 +956,38 @@ def get_required_string(d, k, x):
         value = d[k].strip()
     except KeyError:
         raise CrossComputeConfigurationError(
-            f'"{k}" is required for each {x}')
+            f'{x} {k} is required')
     except AttributeError:
         raise CrossComputeConfigurationError(
-            f'"{k}" must be a string')
+            f'{x} {k} must be a string')
     if not value:
         raise CrossComputeConfigurationError(
-            f'"{k}" cannot be empty')
+            f'{x} {k} cannot be empty')
     return value
+
+
+def get_required_integer(d, k, x):
+    try:
+        value = int(d[k])
+    except KeyError:
+        raise CrossComputeConfigurationError(
+            f'{x} {k} is required')
+    except (TypeError, ValueError):
+        raise CrossComputeConfigurationError(
+            f'{x} {k} must be an integer')
+    return value
+
+
+def get_required_integers(d, k, x):
+    try:
+        values = [int(_) for _ in get_list(d, k)]
+    except (TypeError, ValueError):
+        raise CrossComputeConfigurationError(
+            f'{x} {k} must be integers')
+    if not values:
+        raise CrossComputeConfigurationError(
+            f'{x} {k} are required')
+    return values
 
 
 def get_maps(d, k):
@@ -994,21 +995,21 @@ def get_maps(d, k):
     for v in values:
         if not isinstance(v, dict):
             raise CrossComputeConfigurationError(
-                f'"{k}" must be a list of maps')
+                f'{k} must be a list of maps')
     return values
 
 
 def get_map(d, k):
     value = d.get(k, {})
     if not isinstance(value, dict):
-        raise CrossComputeConfigurationError(f'"{k}" must be a map')
+        raise CrossComputeConfigurationError(f'{k} must be a map')
     return value
 
 
 def get_list(d, k):
     value = d.get(k, [])
     if not isinstance(value, list):
-        raise CrossComputeConfigurationError(f'"{k}" must be a list')
+        raise CrossComputeConfigurationError(f'{k} must be a list')
     return value
 
 
