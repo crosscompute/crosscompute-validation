@@ -1,12 +1,6 @@
 * title: Tool X - Improve health, safety, quality of life
 * description: Improve health, safety, quality of life in our communities
 
-copyrights:
-  - name: CrossCompute
-    slug: crosscompute
-    years:
-      - 2024
-
 network:
   markets:
     - uri: https://crosscompute.net
@@ -126,6 +120,26 @@ output:
 
 debug:
   variables:
+    - id: town_name_debug
+      view: string
+      path: variables.dictionary
+      level: DEBUG
+    - id: town_name_info
+      view: string
+      path: variables.dictionary
+      level: INFO
+    - id: town_name_warning
+      view: string
+      path: variables.dictionary
+      level: WARNING
+    - id: town_name_error
+      view: string
+      path: variables.dictionary
+      level: ERROR
+    - id: town_name_critical
+      view: string
+      path: variables.dictionary
+      level: CRITICAL
   templates:
 
 ** print:

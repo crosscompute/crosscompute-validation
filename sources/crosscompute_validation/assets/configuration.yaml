@@ -240,9 +240,36 @@ log:
   variables:
   templates:
 
-# debug is how your scripts record information for troubleshooting bugs
+# debug is how your scripts record errors, warnings, logs
 debug:
   variables:
+    # level filters variables based on user roles and settings;
+    # level == DEBUG is only visible to site readers and tool managers;
+    # level == INFO is visible to all result viewers;
+    # level == WARNING is visible to all result viewers;
+    # level == ERROR is visible to all result viewers;
+    # level == CRITICAL is visible to all result viewers and is intended to
+    #   indicate script errors (analogous to HTTP 50x)
+    - id: town_name_debug
+      view: string
+      path: variables.dictionary
+      level: DEBUG
+    - id: town_name_info
+      view: string
+      path: variables.dictionary
+      level: INFO
+    - id: town_name_warning
+      view: string
+      path: variables.dictionary
+      level: WARNING
+    - id: town_name_error
+      view: string
+      path: variables.dictionary
+      level: ERROR
+    - id: town_name_critical
+      view: string
+      path: variables.dictionary
+      level: CRITICAL
   templates:
 
 # print defines how your output will render as a document or presentation

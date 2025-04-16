@@ -4,6 +4,12 @@ name: Tool X
 slug: tool-x
 version: 0.0.0
 
+copyrights:
+  - name: CrossCompute
+    slug: crosscompute
+    years:
+      - 2024
+
 tools:
   - path: abc/automate.yaml
 
