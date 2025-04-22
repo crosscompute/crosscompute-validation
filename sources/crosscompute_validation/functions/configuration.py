@@ -95,7 +95,7 @@ class ToolDefinition(Definition):
             validate_protocol,
             validate_paths,
             validate_tool_identifiers,
-            validate_copyright,
+            validate_copyrights,
             validate_tools,
             validate_steps,
             validate_prints,
@@ -370,8 +370,8 @@ async def validate_tool_identifiers(d):
     return {'name': name, 'slug': slug, 'version': version}
 
 
-async def validate_copyright(d):
-    copyright_maps = get_maps(d, 'copyright')
+async def validate_copyrights(d):
+    copyright_maps = get_maps(d, 'copyrights')
     copyright_definitions = [await CopyrightDefinition.load(
         _) for _ in copyright_maps]
     return {'copyright_definitions': copyright_definitions}
