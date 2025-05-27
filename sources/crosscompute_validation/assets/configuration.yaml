@@ -442,6 +442,7 @@ environment:
   # process runs each preset as a separate process;
   # none runs each preset one at a time
   concurrency: process
+  # TODO: Replace interval with schedule to enable things like Mondays at 5pm
   # interval specifies how long to wait before running your scripts again;
   # use this setting to have dashboards update themselves
   interval: 30 minutes
