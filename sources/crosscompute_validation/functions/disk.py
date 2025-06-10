@@ -1,12 +1,12 @@
 import re
-from pathlib import Path
+from pathlib import PurePath
 
 from crosscompute_macros.disk import (
     list_paths)
 
 
 async def get_matching_paths(path_template):
-    path = Path(path_template)
+    path = PurePath(path_template)
     expression = path.name.format(suffix='.*', index='[0-9]+')
     folder = path.parent
     paths = await list_paths(folder)

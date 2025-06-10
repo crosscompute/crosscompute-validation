@@ -4,10 +4,11 @@ from collections import Counter
 from logging import getLogger
 from os import getenv
 from os.path import basename
-from pathlib import Path
+from pathlib import PurePath
 
 from aiofiles import open
 from crosscompute_macros.disk import (
+    get_absolute_path,
     is_contained_path,
     is_existing_path,
     is_file_path,
@@ -88,8 +89,8 @@ class Definition(dict):
 class ToolDefinition(Definition):
 
     async def _initialize(self, **kwargs):
-        self.absolute_path = path = kwargs['path'].absolute()
-        self.absolute_folder = path.parent
+        self.absolute_path = path = await get_absolute_path(kwargs['path'])
+        self.absolute_folder = PurePath(path).parent
         self.locus = kwargs['locus']
         self._validation_functions.extend([
             validate_protocol,
@@ -240,7 +241,7 @@ class ButtonDefinition(Definition):
 
 
 async def load_configuration(path_or_folder, locus='0'):
-    path_or_folder = Path(path_or_folder)
+    path_or_folder = PurePath(path_or_folder)
     if await is_file_path(path_or_folder):
         configuration = await load_configuration_from_path(
             path_or_folder, locus)
@@ -257,7 +258,7 @@ async def load_configuration(path_or_folder, locus='0'):
 
 
 async def load_configuration_from_path(path, locus):
-    path = Path(path).absolute()
+    path = await get_absolute_path(path)
     L.debug('"%s" is loading', redact_path(path))
     try:
         c = await load_raw_configuration(path)
@@ -306,7 +307,7 @@ async def load_raw_configuration(configuration_path, with_comments=False):
 
 
 def get_configuration_format(path):
-    suffix = path.suffix
+    suffix = PurePath(path).suffix
     try:
         configuration_format = {
             '.yaml': 'yaml',
@@ -337,7 +338,7 @@ async def validate_protocol(d):
 
 async def validate_paths(d):
     packs = list(d.items())
-    folder = Path(d.absolute_folder)
+    folder = PurePath(d.absolute_folder)
     while packs:
         k, v = packs.pop()
         if k in ['path', 'folder']:
@@ -641,7 +642,7 @@ async def validate_script_identifiers(d):
         raise CrossComputeConfigurationError(
             f'script {method_string} conflict; choose one')
     return {
-        'folder': Path(d.get('folder', '.')),
+        'folder': PurePath(d.get('folder', '.')),
         'command_string': command_string,
         'preparation_map': preparation_map}
 
@@ -890,7 +891,7 @@ async def parse_data_by_id(data_by_id, variable_definitions):
 
 
 def prepare_script_path(script_path):
-    path = Path(script_path)
+    path = PurePath(script_path)
     match path.suffix:
         case '.py':
             command_string = f'python "{path}"'
@@ -1025,7 +1026,7 @@ def get_path(d):
     path = d.get('path', '').strip()
     if not path:
         return
-    return Path(path)
+    return PurePath(path)
 
 
 def format_text(text, data_by_id):
