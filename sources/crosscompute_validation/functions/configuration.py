@@ -762,7 +762,7 @@ async def validate_package_identifiers(d):
         raise CrossComputeConfigurationError(
             f'package manager "{manager_name}" is not supported')
     mode_name = d.get('mode', '').strip()
-    if mode_name not in ['']:
+    if mode_name not in ['', 'development']:
         raise CrossComputeConfigurationError(
             f'package mode "{mode_name}" is not supported')
     return {
