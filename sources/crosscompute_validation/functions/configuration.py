@@ -760,10 +760,15 @@ async def validate_package_identifiers(d):
     manager_name = get_required_string(d, 'manager', 'package')
     if manager_name not in ['dnf', 'apt', 'pip', 'npm']:
         raise CrossComputeConfigurationError(
-            f'manager "{manager_name}" is not supported')
+            f'package manager "{manager_name}" is not supported')
+    mode_name = d.get('mode', '').strip()
+    if mode_name not in ['']:
+        raise CrossComputeConfigurationError(
+            f'package mode "{mode_name}" is not supported')
     return {
         'id': package_id,
-        'manager_name': manager_name}
+        'manager_name': manager_name,
+        'mode_name': mode_name}
 
 
 async def validate_port_identifiers(d):
