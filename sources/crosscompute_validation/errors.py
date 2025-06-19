@@ -6,7 +6,7 @@ class CrossComputeError(Exception):
 
     def __init__(self, *args, **kwargs):
         d = {}
-        if len(args):
+        if args:
             arg = args[0]
             if isinstance(arg, CrossComputeError):
                 d.update(arg.__dict__)
