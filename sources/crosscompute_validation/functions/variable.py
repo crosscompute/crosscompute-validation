@@ -56,10 +56,10 @@ class LoadableNumberView(LoadableVariableView):
     async def parse(self, value):
         try:
             value = float(value)
-        except ValueError:
+        except ValueError as e:
             raise CrossComputeDataError(
                 f'value "{value}" is not a number',
-                variable_id=self.variable.id)
+                variable_id=self.variable.id) from e
         if value.is_integer():
             value = int(value)
         return value
@@ -122,9 +122,9 @@ async def load_variable_data(folder, variable, with_configuration_path=True):
 def load_variable_data_from(variable_value_by_id, variable_id):
     try:
         variable_value = variable_value_by_id[variable_id]
-    except KeyError:
+    except KeyError as e:
         raise CrossComputeDataError(
-            'value was not found', variable_id=variable_id)
+            'value was not found', variable_id=variable_id) from e
     return {DATA_VALUE: variable_value}
 
 
@@ -183,7 +183,7 @@ async def load_dictionary_data(path):
     try:
         value = await load_raw_json(path)
     except (DiskError, ParsingError) as e:
-        raise CrossComputeDataError(e)
+        raise CrossComputeDataError(e) from e
     if not isinstance(value, dict):
         raise CrossComputeDataError('dictionary expected', path=path)
     return {DATA_VALUE: value}
@@ -196,7 +196,7 @@ async def load_file_data(path, load):
             return {DATA_PATH: path}
         value = await load(path)
     except (DiskError, ParsingError) as e:
-        raise CrossComputeDataError(e)
+        raise CrossComputeDataError(e) from e
     return {DATA_VALUE: value}
 
 
