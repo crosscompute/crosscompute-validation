@@ -169,12 +169,6 @@ output:
     #   note that path is relative to the output folder;
     # configuration customizes the view and is view-specific;
     # mode overrides rendering mode
-    - id: document
-      view: link
-      path: document.pdf
-      configuration:
-        link-text: YOUR-LINK-TEXT
-        file-name: YOUR-FILE-NAME
     - id: message
       view: string
       path: variables.dictionary
@@ -187,29 +181,30 @@ output:
     - id: monologue
       view: markdown
       path: monologue.md
-    - id: logo
-      view: image
-      path: logo.svg
-    - id: counts
-      view: table
-      path: counts.json
-    - id: demo
-      view: frame
-      path: variables.dictionary
     - id: cards
       view: json
       path: cards.json
-    # Here the checkbox is configured dynamically from buildings.json
-    # and will render as input because of the mode override
-    - id: buildings
-      view: checkbox
-      path: buildings.txt
+    - id: report
+      view: html
+      path: report.html
+    - id: document
+      view: link
+      path: document.pdf
       configuration:
-        path: buildings.json
-      mode: input
+        link-text: YOUR-LINK-TEXT
+        file-name: YOUR-FILE-NAME
+    - id: counts
+      view: table
+      path: counts.json
+    - id: logo
+      view: image
+      path: logo.svg
     - id: report
       view: pdf
       path: example.pdf
+    - id: demo
+      view: frame
+      path: variables.dictionary
     - id: region
       view: map-mapbox
       path: region.geojson
@@ -230,6 +225,14 @@ output:
     - id: identity
       view: barcode
       path: variables.dictionary
+    # Here the checkbox is configured dynamically from buildings.json
+    # and will render as input because of the mode override
+    - id: buildings
+      view: checkbox
+      path: buildings.txt
+      configuration:
+        path: buildings.json
+      mode: input
   # output templates guide the user on how to interpret the output variables
   templates:
     # path specifies the markdown file for your template (required)
@@ -495,8 +498,13 @@ display:
         - id: back
           text: Volver
     - id: output
-      # design flat prevents section folding
-      design: flat
+      design: flex
+    - id: output
+      design: accordion
+    - id: output
+      design: bare
+    - id: output
+      design: none
 
 # authorization restricts access to your tool
 authorization:
