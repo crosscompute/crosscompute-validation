@@ -238,6 +238,12 @@ output:
 # log is how your scripts communicate with the user while running
 log:
   variables:
+    - id: log
+      view: text
+      path: log.txt
+    - id: log
+      view: markdown
+      path: log.md
   templates:
 
 # debug is how your scripts record errors, warnings, logs
