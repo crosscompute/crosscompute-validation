@@ -237,6 +237,8 @@ output:
   templates:
     # path specifies the markdown file for your template (required)
     - path: output.md
+    # path can be an html file
+    - path: output.html
 
 # log is how your scripts communicate with the user while running
 log:
