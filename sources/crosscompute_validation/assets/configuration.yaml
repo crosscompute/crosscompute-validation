@@ -508,7 +508,7 @@ display:
     - id: output
       design: none
 
-# authorization restricts access to your tool
+# authorization restricts user access to your tool
 authorization:
   # tokens are api keys for your tool;
   # each token defines an identity
@@ -550,3 +550,14 @@ authorization:
           # then the user will have town_name Mansfield and
           # can only see presets whose input variable town_name is Mansfield
           action: match
+
+# compatibility restricts worker access to your tool
+compatibility:
+  # workers restrict access to specific workers;
+  # omit to remove this restriction
+  workers:
+    - slug: nKUOoxPSER8AxuBF5nFgpWhWycza9DMm
+  # labels restrict access to workers with specific labels;
+  # omit to remove this restriction
+  labels:
+    - slug: processor/cpu
