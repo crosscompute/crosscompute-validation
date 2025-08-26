@@ -10,6 +10,8 @@ class CrossComputeError(Exception):
             arg = args[0]
             if isinstance(arg, CrossComputeError):
                 d.update(arg.__dict__)
+            elif isinstance(arg, dict):
+                d['errors'] = arg
             else:
                 d['message'] = str(arg)
         self.__dict__.update(d | kwargs)
@@ -18,6 +20,8 @@ class CrossComputeError(Exception):
         texts = []
         if hasattr(self, 'message'):
             texts.append(self.message)
+        if hasattr(self, 'errors'):
+            texts.append(str(self.errors))
         if hasattr(self, 'path'):
             x = redact_path(self.path)
             texts.append(f'path="{x}"')
