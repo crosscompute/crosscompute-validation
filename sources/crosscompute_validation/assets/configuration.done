@@ -106,7 +106,7 @@ scripts:
   - path: run.ipynb
   - function: run.plot_all
 
-environment:
+execution:
   engine: podman
   image: python
   packages:

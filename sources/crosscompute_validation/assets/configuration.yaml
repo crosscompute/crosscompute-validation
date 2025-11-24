@@ -408,8 +408,8 @@ scripts:
   # folder paths are passed as function arguments
   - function: run.plot_all
 
-# environment configures how your scripts run
-environment:
+# execution configures how your scripts run
+execution:
   # processor is what processor type you want to use to run your scripts
   processor: cpu
   # memory is how much memory you want to reserve for your scripts

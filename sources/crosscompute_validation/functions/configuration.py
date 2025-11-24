@@ -6,7 +6,7 @@ from os import getenv
 from os.path import basename
 from pathlib import PurePath
 
-from aiofiles import open
+import aiofiles
 from crosscompute_macros.disk import (
     get_absolute_path,
     is_contained_path,
@@ -103,7 +103,7 @@ class ToolDefinition(Definition):
             validate_presets,
             validate_datasets,
             validate_scripts,
-            validate_environment,
+            validate_execution,
             validate_display])
 
     async def load_data_by_id(self, result_folder, step_name):
@@ -166,7 +166,7 @@ class ScriptDefinition(Definition):
             validate_script_identifiers])
 
 
-class EnvironmentDefinition(Definition):
+class ExecutionDefinition(Definition):
 
     async def _initialize(self, **kwargs):
         self.tool_definition = kwargs['tool_definition']
@@ -174,7 +174,7 @@ class EnvironmentDefinition(Definition):
             validate_engine,
             validate_packages,
             validate_ports,
-            validate_environment_variables])
+            validate_execution_variables])
 
 
 class DisplayDefinition(Definition):
@@ -321,12 +321,13 @@ def get_configuration_format(path):
 
 async def validate_protocol(d):
     if 'crosscompute' not in d:
-        raise CrossComputeError('crosscompute protocol version is missing')
+        x = 'crosscompute protocol version is missing'
+        raise CrossComputeError(x)
     protocol_version = d['crosscompute'].strip()
     if not protocol_version:
-        raise CrossComputeConfigurationError(
-            'crosscompute protocol version is required')
-    elif not is_equivalent_version(
+        x = 'crosscompute protocol version is required'
+        raise CrossComputeConfigurationError(x)
+    if not is_equivalent_version(
             protocol_version, PROTOCOL_VERSION, version_depth=3):
         raise CrossComputeConfigurationError(
             f'crosscompute protocol {PROTOCOL_VERSION} is not compatible with '
@@ -475,11 +476,11 @@ async def validate_scripts(d):
     return {'script_definitions': script_definitions}
 
 
-async def validate_environment(d):
-    environment_map = get_map(d, 'environment')
-    environment_definition = await EnvironmentDefinition.load(
-        environment_map, tool_definition=d)
-    return {'environment_definition': environment_definition}
+async def validate_execution(d):
+    execution_map = get_map(d, 'execution')
+    execution_definition = await ExecutionDefinition.load(
+        execution_map, tool_definition=d)
+    return {'execution_definition': execution_definition}
 
 
 async def validate_display(d):
@@ -680,17 +681,19 @@ async def validate_ports(d):
         'port_definitions': port_definitions}
 
 
-async def validate_environment_variables(d):
+async def validate_execution_variables(d):
     variable_maps = get_maps(d, 'variables')
     variable_definitions = [VariableDefinition(
         _) for _ in variable_maps]
     for variable_definition in variable_definitions:
         variable_id = variable_definition['id']
         if getenv(variable_id) is None:
-            L.error('tool environment is missing variable "%s"', variable_id)
+            L.error(
+                'tool environment is missing execution variable "%s"',
+                variable_id)
     assert_unique_values(
         [_['id'] for _ in variable_definitions],
-        'environment variable id "{x}"')
+        'execution variable id "{x}"')
     return {'variable_definitions': variable_definitions}
 
 
@@ -832,7 +835,7 @@ async def validate_button_identifiers(d):
 
 async def yield_data_by_id_from_csv(path, variable_definitions):
     try:
-        async with open(path, mode='rt') as f:
+        async with aiofiles.open(path, mode='rt') as f:
             lines = await f.readlines()
             csv_reader = csv.reader(lines)
             keys = [_.strip() for _ in next(csv_reader)]
@@ -844,7 +847,7 @@ async def yield_data_by_id_from_csv(path, variable_definitions):
                     continue
                 yield data_by_id
     except OSError as e:
-        raise CrossComputeConfigurationError(e)
+        raise CrossComputeConfigurationError(e) from e
     except StopIteration:
         pass
 
@@ -861,7 +864,7 @@ async def yield_data_by_id_from_txt(path, variable_definitions):
             'define at least one input variable when using preset '
             'configuration suffix ".txt"')
     try:
-        async with open(path, mode='rt') as f:
+        async with aiofiles.open(path, mode='rt') as f:
             lines = await f.readlines()
             for line in lines:
                 line = line.strip()

@@ -184,7 +184,7 @@ datasets:
     reference:
       * uri: https://example.net/def-2024.csv
 
-environment:
+execution:
   processor: cpu
   memory: 1gb
   packages:
