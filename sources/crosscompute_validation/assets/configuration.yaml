@@ -54,21 +54,28 @@ pricing:
 # tools let you include other tools and define a kit
 tools:
   # path specifies the location of the tool to include;
-  # aka references this tool in your templates;
   - path: abc/automate.yaml
-    aka: abc
   # uri specifies the uri of the tool to include;
   # visibility index means the tool appears in index and search but not home
   - uri: https://github.com/crosscompute/crosscompute-examples
-    aka: examples
     visibility: index
   # hashes provide a way to verify the downloaded code;
   # visibility search means the tool appears in search but not home and index
   - uri: /t/add-numbers
-    aka: add_numbers
     visibility: search
     hashes:
       - sha256: abc
+  # PROVISIONAL
+  - slug:
+    path:
+    repository:
+      uri:
+      version:
+      path:
+    hashes:
+    environment:
+    visibility:
+    runnability:
 
 # results let you include other results in your reports
 results:
