@@ -1,4 +1,4 @@
-from aiofiles import open
+import aiofiles
 from pytest import mark, raises
 
 from crosscompute_macros.disk import (
@@ -33,7 +33,7 @@ async def test_validate_paths(tmpdir):
     with raises(CrossComputeConfigurationError):
         await validate_paths(definition)
     await remove_path(tmpdir / 'a')
-    async with open(tmpdir / 'a', 'wt') as f:
+    async with aiofiles.open(tmpdir / 'a', 'wt') as f:
         await f.write('A')
     await validate_paths(definition)
 

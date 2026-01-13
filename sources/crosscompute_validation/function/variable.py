@@ -14,15 +14,15 @@ from crosscompute_macros.error import (
 from crosscompute_macros.package import (
     import_attribute)
 
-from ..constants import (
+from ..constant import (
     DATA_CONFIGURATION,
     DATA_PATH,
     DATA_VALUE,
     RAW_DATA_BYTE_COUNT,
     RAW_DATA_CACHE_LENGTH)
-from ..errors import (
+from ..error import (
     CrossComputeDataError)
-from ..settings import (
+from ..setting import (
     view_by_name)
 from .disk import (
     get_matching_paths)

@@ -31,7 +31,7 @@ from crosscompute_macros.text import (
 from crosscompute_macros.yaml import (
     load_raw_yaml)
 
-from ..constants import (
+from ..constant import (
     CONFIGURATION_NAME,
     DATA_VALUE,
     ENGINE_NAME,
@@ -48,12 +48,12 @@ from ..constants import (
     TOOL_VERSION,
     VARIABLE_ID_PATTERN,
     VARIABLE_ID_TEMPLATE_PATTERN)
-from ..errors import (
+from ..error import (
     CrossComputeConfigurationError,
     CrossComputeDataError,
     CrossComputeError,
     CrossComputeFormatError)
-from ..settings import (
+from ..setting import (
     printer_by_name,
     view_by_name)
 from .variable import (
@@ -259,7 +259,7 @@ async def load_configuration(path_or_folder, locus='0'):
 
 async def load_configuration_from_path(path, locus):
     path = await get_absolute_path(path)
-    L.debug('"%s" is loading', redact_path(path))
+    L.debug('loading "%s"', redact_path(path))
     try:
         c = await load_raw_configuration(path)
         c = await ToolDefinition.load(c, path=path, locus=locus)
@@ -267,7 +267,6 @@ async def load_configuration_from_path(path, locus):
         if not hasattr(e, 'path'):
             e.path = path
         raise
-    L.debug('"%s" loaded', redact_path(path))
     return c
 
 
@@ -285,12 +284,12 @@ async def load_configuration_from_folder(folder, locus):
             configuration = await load_configuration_from_path(path, locus)
         except CrossComputeConfigurationError:
             raise
-        except CrossComputeFormatError:
+        except (CrossComputeError, CrossComputeFormatError):
             continue
         break
     else:
-        raise CrossComputeError(
-            'configuration was not found', code=ERROR_CONFIGURATION_NOT_FOUND)
+        x = 'configuration was not found'
+        raise CrossComputeError(x, code=ERROR_CONFIGURATION_NOT_FOUND)
     return configuration
 
 
