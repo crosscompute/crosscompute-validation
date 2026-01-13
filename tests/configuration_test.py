@@ -1,36 +1,36 @@
 import aiofiles
-from pytest import mark, raises
+import pytest
 
 from crosscompute_macros.disk import (
     make_soft_link,
     remove_path)
 
-from crosscompute_validation.errors import (
+from crosscompute_validation.error import (
     CrossComputeConfigurationError)
-from crosscompute_validation.functions.configuration import (
+from crosscompute_validation.function.configuration import (
     Definition,
     validate_paths,
     validate_steps)
 
 
-@mark.asyncio
+@pytest.mark.asyncio
 async def test_validate_paths(tmpdir):
     definition = Definition({
         'xs': ['a', 'b']})
     definition.absolute_folder = tmpdir
     await validate_paths(definition)
     definition['xs'] = [{'path': []}]
-    with raises(CrossComputeConfigurationError):
+    with pytest.raises(CrossComputeConfigurationError):
         await validate_paths(definition)
     definition['xs'][0]['path'] = str(tmpdir / 'c')
     await make_soft_link(tmpdir / 'c', 'b')
     await make_soft_link(tmpdir / 'b', 'a')
     await make_soft_link(tmpdir / 'a', '/')
-    with raises(CrossComputeConfigurationError):
+    with pytest.raises(CrossComputeConfigurationError):
         await validate_paths(definition)
     await remove_path(tmpdir / 'a')
     await make_soft_link(tmpdir / 'a', 'c')
-    with raises(CrossComputeConfigurationError):
+    with pytest.raises(CrossComputeConfigurationError):
         await validate_paths(definition)
     await remove_path(tmpdir / 'a')
     async with aiofiles.open(tmpdir / 'a', 'wt') as f:
@@ -38,9 +38,9 @@ async def test_validate_paths(tmpdir):
     await validate_paths(definition)
 
 
-@mark.asyncio
+@pytest.mark.asyncio
 async def test_validate_steps():
-    with raises(CrossComputeConfigurationError):
+    with pytest.raises(CrossComputeConfigurationError):
         await validate_steps({
             'input': {
                 'variables': [
