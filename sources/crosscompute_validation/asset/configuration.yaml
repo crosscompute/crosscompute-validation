@@ -53,29 +53,58 @@ pricing:
 
 # tools let you include other tools and define a kit
 tools:
-  # path specifies the location of the tool to include;
+
+  # path specifies the location of the tool to include
+  - path: add-numbers/automate.yaml
+
+  # aka references this tool in your templates;
   - path: abc/automate.yaml
-  # uri specifies the uri of the tool to include;
-  # visibility index means the tool appears in index and search but not home
-  - uri: https://github.com/crosscompute/crosscompute-examples
-    visibility: index
-  # hashes provide a way to verify the downloaded code;
-  # visibility search means the tool appears in search but not home and index
-  - uri: /t/add-numbers
-    visibility: search
+    aka: abc
+
+  # repository specifies the uri, version, path of the tool to include;
+  # uri is the repository uri;
+  # version can be a branch name, tag name or commit hash;
+  # path is the relative path of the configuration file
+  - repository:
+      uri: git@github.com:crosscompute/crosscompute-examples
+      version: 8d915d91f2006ebadd1c6b7ee1d72db8feab033c
+      path: add-numbers/automate.yaml
+    # hashes provide a way to verify the downloaded code;
+    # use unpadded url-safe base64 to encode hashes
+    # base64.urlsafe_b64encode(hash.digest()).decode('utf-8').rstrip('=')
+
     hashes:
-      - sha256: abc
-  # PROVISIONAL
-  - slug:
-    path:
-    repository:
-      uri:
-      version:
-      path:
-    hashes:
+      sha256: pZGm1Av0IEBKARczz7exkNYsZb8LzaMrV7J32a2fFG4
+
+    # environment provides a way to set environment variables;
+    # be careful not to commit sensitive values to version control
     environment:
-    visibility:
-    runnability:
+      x: 1
+      y: 2
+
+    # visibility public means the tool is listed
+    visibility: public
+
+    # visibility hidden means the tool is not listed
+    # visibility: hidden
+
+    # visibility protected means tool specific view permission is required
+    # visibility: protected
+
+    # visibility private means that only site viewers can see the tool
+    # visibility: private
+
+    # runnability public means users do not need to sign in to run the tool
+    runnability: public
+
+    # runnability hidden means users do not need to sign in to run the tool
+    # runnability: hidden
+
+    # runnability protected means tool specific run permission is required
+    # runnability: protected
+
+    # runnability private means that only site runners can run the tool
+    # runnability: private
 
 # results let you include other results in your reports
 results:
@@ -262,7 +291,7 @@ log:
 debug:
   variables:
     # level filters variables based on user roles and settings;
-    # level == DEBUG is only visible to site readers and tool managers;
+    # level == DEBUG is only visible to site readers and tool fixers;
     # level == INFO is visible to all result viewers;
     # level == WARNING is visible to all result viewers;
     # level == ERROR is visible to all result viewers;
@@ -427,6 +456,14 @@ execution:
   engine: podman
   # image is the container used to run your scripts when using podman engine
   image: python
+  # setup specifies setup scripts by user when using podman engine
+  setup:
+    root:
+      path: setup-root.sh
+      folder: /root
+    user:
+      path: setup-user.sh
+      folder: /home/user
   # packages are dependencies required by your scripts;
   # engine=unsafe will install the packages directly on your machine;
   # engine=podman will install the packages in the container image
@@ -508,8 +545,6 @@ display:
       design: flex
     - id: output
       design: accordion
-    - id: output
-      design: bare
     - id: output
       design: none
 
