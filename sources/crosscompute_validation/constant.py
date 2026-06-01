@@ -22,6 +22,9 @@ VARIABLE_ID_PATTERN = re.compile(r'[a-zA-Z0-9_]+$')
 VARIABLE_ID_TEMPLATE_PATTERN = re.compile(r'{ *([a-zA-Z0-9_| ]+?) *}')
 
 
+DOMAIN_PATTERN = re.compile(r'[^a-z0-9.-]')
+
+
 RAW_DATA_BYTE_COUNT = 16 * 1024
 RAW_DATA_CACHE_LENGTH = 256
 

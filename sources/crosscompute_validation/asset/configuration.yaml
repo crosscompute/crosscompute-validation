@@ -482,6 +482,12 @@ execution:
       manager: dnf
     - id: libgeos-dev
       manager: apt
+  # apis specify which domains to allow at which stage (TENTATIVE SYNTAX)
+  apis:
+    - domain: pypi.org
+      stage: setup
+    - domain: google.com
+      stage: run
   # ports expose server processes running in your scripts
   ports:
     # id should correspond to a log or debug variable id that uses frame view;

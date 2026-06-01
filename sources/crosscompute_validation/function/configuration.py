@@ -34,6 +34,7 @@ from crosscompute_macros.yaml import (
 from ..constant import (
     CONFIGURATION_NAME,
     DATA_VALUE,
+    DOMAIN_PATTERN,
     ENGINE_NAME,
     ERROR_CONFIGURATION_NOT_FOUND,
     IMAGE_NAME,
@@ -174,7 +175,8 @@ class ExecutionDefinition(Definition):
             validate_engine,
             validate_packages,
             validate_ports,
-            validate_execution_variables])
+            validate_execution_variables,
+            validate_apis])
 
 
 class DisplayDefinition(Definition):
@@ -238,6 +240,13 @@ class ButtonDefinition(Definition):
     async def _initialize(self, **kwargs):
         self._validation_functions.extend([
             validate_button_identifiers])
+
+
+class APIDefinition(Definition):
+
+    async def _initialize(self, **kwargs):
+        self._validation_functions.extend([
+            validate_api_identifiers])
 
 
 async def load_configuration(path_or_folder, locus='0'):
@@ -697,6 +706,13 @@ async def validate_execution_variables(d):
     return {'variable_definitions': variable_definitions}
 
 
+async def validate_apis(d):
+    api_maps = get_maps(d, 'apis')
+    api_definitions = [APIDefinition(
+        _) for _ in api_maps]
+    return {'api_definitions': api_definitions}
+
+
 async def validate_styles(d):
     style_maps = get_maps(d, 'styles')
     style_definitions = [await StyleDefinition.load(
@@ -827,10 +843,20 @@ async def validate_page_identifiers(d):
 async def validate_button_identifiers(d):
     button_id = get_required_string(d, 'id', 'button')
     if button_id not in ['continue', 'back']:
-        raise CrossComputeConfigurationError(
-            f'button id "{button_id}" is not supported')
+        x = f'button id "{button_id}" is not supported'
+        raise CrossComputeConfigurationError(x)
     button_text = get_required_string(d, 'text', 'button')
     return {'id': button_id, 'text': button_text}
+
+
+async def validate_api_identifiers(d):
+    domain = get_required_string(d, 'domain', 'api')
+    domain = DOMAIN_PATTERN.sub('', domain.lower()).strip('.-')
+    stage = get_required_string(d, 'stage', 'api')
+    if stage not in ['setup', 'run']:
+        x = f'stage "{stage}" is not supported'
+        raise CrossComputeConfigurationError(x)
+    return {'domain': domain, 'stage': stage}
 
 
 async def yield_data_by_id_from_csv(path, variable_definitions):
