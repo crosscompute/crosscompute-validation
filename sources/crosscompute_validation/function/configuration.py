@@ -293,13 +293,14 @@ async def load_configuration_from_folder(folder, locus):
     return configuration
 
 
-async def load_raw_configuration(configuration_path, with_comments=False):
+async def load_raw_configuration(configuration_path, *, with_comments=False):
     configuration_format = get_configuration_format(configuration_path)
     load = {
         'yaml': load_raw_yaml,
     }[configuration_format]
     try:
-        configuration = await load(configuration_path, with_comments)
+        configuration = await load(
+            configuration_path, with_comments=with_comments)
     except (DiskError, ParsingError) as e:
         raise CrossComputeConfigurationError(e)
     return configuration
