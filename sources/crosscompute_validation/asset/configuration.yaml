@@ -482,7 +482,7 @@ execution:
       manager: dnf
     - id: libgeos-dev
       manager: apt
-  # apis specify which domains to allow at which stage (TENTATIVE SYNTAX)
+  # apis specify which domains to allow at which stage
   apis:
     - domain: pypi.org
       stage: setup
