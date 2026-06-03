@@ -708,7 +708,7 @@ async def validate_execution_variables(d):
 
 async def validate_apis(d):
     api_maps = get_maps(d, 'apis')
-    api_definitions = [APIDefinition(
+    api_definitions = [await APIDefinition.load(
         _) for _ in api_maps]
     return {'api_definitions': api_definitions}
 
