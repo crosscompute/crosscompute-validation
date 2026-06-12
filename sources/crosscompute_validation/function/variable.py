@@ -57,9 +57,9 @@ class LoadableNumberView(LoadableVariableView):
         try:
             value = float(value)
         except ValueError as e:
+            x = f'value "{value}" is not a number'
             raise CrossComputeDataError(
-                f'value "{value}" is not a number',
-                variable_id=self.variable.id) from e
+                x, variable_id=self.variable.id) from e
         if value.is_integer():
             value = int(value)
         return value
@@ -123,8 +123,9 @@ def load_variable_data_from(variable_value_by_id, variable_id):
     try:
         variable_value = variable_value_by_id[variable_id]
     except KeyError as e:
+        x = 'value was not found'
         raise CrossComputeDataError(
-            'value was not found', variable_id=variable_id) from e
+            x, variable_id=variable_id) from e
     return {DATA_VALUE: variable_value}
 
 
@@ -160,11 +161,13 @@ async def update_data_configuration(data_configuration, path):
 async def load_raw_data(path):
     try:
         matching_paths = await get_matching_paths(path)
-    except OSError:
-        raise CrossComputeDataError('path does not exist', path=path)
+    except OSError as e:
+        x = 'path does not exist'
+        raise CrossComputeDataError(x, path=path) from e
     match len(matching_paths):
         case 0:
-            raise CrossComputeDataError('path does not exist', path=path)
+            x = 'path does not exist'
+            raise CrossComputeDataError(x, path=path)
         case 1:
             path = matching_paths[0]
         case _:
@@ -185,7 +188,8 @@ async def load_dictionary_data(path):
     except (DiskError, ParsingError) as e:
         raise CrossComputeDataError(e) from e
     if not isinstance(value, dict):
-        raise CrossComputeDataError('dictionary expected', path=path)
+        x = 'dictionary expected'
+        raise CrossComputeDataError(x, path=path)
     return {DATA_VALUE: value}
 
 

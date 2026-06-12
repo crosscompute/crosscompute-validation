@@ -31,7 +31,7 @@ RAW_DATA_CACHE_LENGTH = 256
 
 SCRIPT_LANGUAGE = 'python'
 ENGINE_NAME = 'podman'
-IMAGE_NAME = 'python'
+IMAGE_NAME = 'python:slim'
 
 
 PRINTER_NAMES = 'pdf',

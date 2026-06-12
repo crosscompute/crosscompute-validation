@@ -455,7 +455,7 @@ execution:
   # unsafe means that the scripts will run directly on your machine
   engine: podman
   # image is the container used to run your scripts when using podman engine
-  image: python
+  image: python:slim
   # setup specifies setup scripts by user when using podman engine
   setup:
     root:
@@ -496,8 +496,11 @@ execution:
       number: 8888
   # variables are environment variables needed by your scripts
   variables:
-    # id is the environment variable to make available to your script
+    # id is the environment variable to expose at a specific stage
+    - id: GITHUB_KEY
+      stage: setup
     - id: GOOGLE_KEY
+      stage: run
   # concurrency defines how your presets run;
   # thread runs each preset as a separate thread;
   # process runs each preset as a separate process;

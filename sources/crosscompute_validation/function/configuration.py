@@ -124,7 +124,7 @@ class ToolDefinition(Definition):
 
 class CopyrightDefinition(Definition):
 
-    async def _initialize(self, **kwargs):
+    async def _initialize(self, **kwargs):  # noqa: ARG002
         self._validation_functions.extend([
             validate_copyright_identifiers])
 
@@ -173,6 +173,7 @@ class ExecutionDefinition(Definition):
         self.tool_definition = kwargs['tool_definition']
         self._validation_functions.extend([
             validate_engine,
+            validate_setup,
             validate_packages,
             validate_ports,
             validate_execution_variables,
@@ -189,13 +190,20 @@ class DisplayDefinition(Definition):
             validate_pages])
 
 
-class VariableDefinition(Definition):
+class StepVariableDefinition(Definition):
 
     async def _initialize(self, **kwargs):
         self.step_name = kwargs.get('step_name')
         self._validation_functions.extend([
-            validate_variable_identifiers,
-            validate_variable_configuration])
+            validate_step_variable_identifiers,
+            validate_step_variable_configuration])
+
+
+class ExecutionVariableDefinition(Definition):
+
+    async def _initialize(self, **kwargs):  # noqa: ARG002
+        self._validation_functions.extend([
+            validate_execution_variable_identifiers])
 
 
 class TemplateDefinition(Definition):
@@ -206,16 +214,24 @@ class TemplateDefinition(Definition):
             validate_template_identifiers])
 
 
-class PackageDefinition(Definition):
+class SetupDefinition(Definition):
 
     async def _initialize(self, **kwargs):
+        self.user_name = kwargs['user_name']
+        self._validation_functions.extend([
+            validate_setup_identifiers])
+
+
+class PackageDefinition(Definition):
+
+    async def _initialize(self, **kwargs):  # noqa: ARG002
         self._validation_functions.extend([
             validate_package_identifiers])
 
 
 class PortDefinition(Definition):
 
-    async def _initialize(self, **kwargs):
+    async def _initialize(self, **kwargs):  # noqa: ARG002
         self._validation_functions.extend([
             validate_port_identifiers])
 
@@ -230,21 +246,21 @@ class StyleDefinition(Definition):
 
 class PageDefinition(Definition):
 
-    async def _initialize(self, **kwargs):
+    async def _initialize(self, **kwargs):  # noqa: ARG002
         self._validation_functions.extend([
             validate_page_identifiers])
 
 
 class ButtonDefinition(Definition):
 
-    async def _initialize(self, **kwargs):
+    async def _initialize(self, **kwargs):  # noqa: ARG002
         self._validation_functions.extend([
             validate_button_identifiers])
 
 
 class APIDefinition(Definition):
 
-    async def _initialize(self, **kwargs):
+    async def _initialize(self, **kwargs):  # noqa: ARG002
         self._validation_functions.extend([
             validate_api_identifiers])
 
@@ -258,11 +274,11 @@ async def load_configuration(path_or_folder, locus='0'):
         configuration = await load_configuration_from_folder(
             path_or_folder, locus)
     elif not await is_existing_path(path_or_folder):
-        raise CrossComputeConfigurationError(
-            f'path "{redact_path(path_or_folder)}" does not exist')
+        x = f'path "{redact_path(path_or_folder)}" does not exist'
+        raise CrossComputeConfigurationError(x)
     else:
-        raise CrossComputeFormatError(
-            f'path "{redact_path(path_or_folder)}" must be a file or folder')
+        x = f'path "{redact_path(path_or_folder)}" must be a file or folder'
+        raise CrossComputeFormatError(x)
     return configuration
 
 
@@ -311,7 +327,7 @@ async def load_raw_configuration(configuration_path, *, with_comments=False):
         configuration = await load(
             configuration_path, with_comments=with_comments)
     except (DiskError, ParsingError) as e:
-        raise CrossComputeConfigurationError(e)
+        raise CrossComputeConfigurationError(e) from e
     return configuration
 
 
@@ -322,9 +338,9 @@ def get_configuration_format(path):
             '.yaml': 'yaml',
             '.yml': 'yaml',
         }[suffix]
-    except KeyError:
-        raise CrossComputeFormatError(
-            f'file suffix "{suffix}" is not supported')
+    except KeyError as e:
+        x = f'file suffix "{suffix}" is not supported'
+        raise CrossComputeFormatError(x) from e
     return configuration_format
 
 
@@ -402,7 +418,7 @@ async def validate_tools(d):
             tool_configuration = await load_configuration(
                 path, f'{d.locus}-{i}')
         except CrossComputeFormatError as e:
-            raise CrossComputeConfigurationError(e)
+            raise CrossComputeConfigurationError(e) from e
         tool_definitions.extend(tool_configuration.tool_definitions)
     assert_unique_values([_.name for _ in tool_definitions], 'tool name "{x}"')
     assert_unique_values([_.slug for _ in tool_definitions], 'tool slug "{x}"')
@@ -435,12 +451,12 @@ async def validate_prints(d):
     if print_definition:
         for variable_definition in print_definition.variable_definitions:
             view_name = variable_definition.view_name
-            if view_name in ['link']:
+            if view_name == 'link':
                 continue
-            elif view_name not in PRINTER_NAMES:
-                raise CrossComputeConfigurationError(
-                    f'printer "{view_name}" is not supported')
-            elif view_name not in printer_by_name:
+            if view_name not in PRINTER_NAMES:
+                x = f'printer "{view_name}" is not supported'
+                raise CrossComputeConfigurationError(x)
+            if view_name not in printer_by_name:
                 L.error(
                     f'printer "{view_name}" is missing; '
                     f'pip install crosscompute-printers-{view_name}')
@@ -511,7 +527,7 @@ async def validate_copyright_identifiers(d):
 
 async def validate_step_variables(d):
     variable_maps = get_maps(d, 'variables')
-    variable_definitions = [await VariableDefinition.load(
+    variable_definitions = [await StepVariableDefinition.load(
         _, step_name=d.name) for _ in variable_maps]
     return {'variable_definitions': variable_definitions}
 
@@ -663,6 +679,16 @@ async def validate_engine(d):
         'parent_image_name': d.get('image', IMAGE_NAME)}
 
 
+async def validate_setup(d):
+    setup_definition_by_user_name = {}
+    setup_map = get_map(d, 'setup')
+    for user_name in setup_map:
+        script_map = get_map(d, user_name)
+        setup_definition_by_user_name[user_name] = await SetupDefinition.load(
+            script_map, user_name=user_name)
+    return setup_definition_by_user_name
+
+
 async def validate_packages(d):
     package_maps = get_maps(d, 'packages')
     package_definitions = [await PackageDefinition.load(
@@ -681,9 +707,9 @@ async def validate_ports(d):
         try:
             variable_definition = find_item(
                 variable_definitions, 'id', port_id)
-        except StopIteration:
-            raise CrossComputeConfigurationError(
-                f'port "{port_id}" must correspond to a log or debug variable')
+        except StopIteration as e:
+            x = f'port "{port_id}" must correspond to a log or debug variable'
+            raise CrossComputeConfigurationError(x) from e
         port_definition.step_name = variable_definition.step_name
         port_definitions.append(port_definition)
     return {
@@ -692,10 +718,10 @@ async def validate_ports(d):
 
 async def validate_execution_variables(d):
     variable_maps = get_maps(d, 'variables')
-    variable_definitions = [VariableDefinition(
+    variable_definitions = [await ExecutionVariableDefinition.load(
         _) for _ in variable_maps]
     for variable_definition in variable_definitions:
-        variable_id = variable_definition['id']
+        variable_id = variable_definition.id
         if getenv(variable_id) is None:
             L.error(
                 'tool environment is missing execution variable "%s"',
@@ -726,7 +752,7 @@ async def validate_pages(d):
     return {'page_definitions': page_definitions}
 
 
-async def validate_variable_identifiers(d):
+async def validate_step_variable_identifiers(d):
     variable_id = get_required_string(d, 'id', 'variable')
     view_name = get_required_string(d, 'view', 'variable')
     path_name = get_required_string(d, 'path', 'variable')
@@ -740,7 +766,7 @@ async def validate_variable_identifiers(d):
         raise CrossComputeConfigurationError(
             f'variable "{variable_id}" view "{view_name}" is not installed or '
             'not supported')
-    if path_name.startswith('/') or path_name.startswith('..'):
+    if path_name.startswith(('/', '..')):
         raise CrossComputeConfigurationError(
             f'variable "{variable_id}" path "{path_name}" must be within the '
             'folder')
@@ -755,15 +781,29 @@ async def validate_variable_identifiers(d):
         'label_text': label_text}
 
 
-async def validate_variable_configuration(d):
+async def validate_step_variable_configuration(d):
     # TODO: Validate configuration according to variable view
     c = get_map(d, 'configuration')
     if 'path' in c:
         p = c['path']
         if not p.endswith('.json'):
-            raise CrossComputeConfigurationError(
-                f'variable configuration path "{p}" suffix must be ".json"')
+            x = f'variable configuration path "{p}" suffix must be ".json"'
+            raise CrossComputeConfigurationError(x)
     return {'configuration': c}
+
+
+async def validate_execution_variable_identifiers(d):
+    variable_id = get_required_string(d, 'id', 'variable')
+    stage_name = get_optional_string(d, 'stage', 'variable', 'run')
+    if stage_name not in STAGE_NAMES:
+        stage_names_string = ', '.join(STAGE_NAMES)
+        x = (
+            f'variable stage "{stage_name}" is not supported; '
+            f'expected {stage_names_string}')
+        raise CrossComputeConfigurationError(x)
+    return {
+        'id': variable_id,
+        'stage_name': stage_name}
 
 
 async def validate_template_identifiers(d):
@@ -772,6 +812,21 @@ async def validate_template_identifiers(d):
     return {
         'path_name': path_name,
         'expression_text': expression_text}
+
+
+async def validate_setup_identifiers(d):
+    user_name = d.user_name
+    key = f'setup.{user_name}'
+    path_name = get_required_string(d, 'path', key)
+    folder_name = get_optional_string(d, 'folder', key)
+    if not await is_existing_path(path_name):
+        x = f'{key} path "{path_name}" is invalid'
+        raise CrossComputeConfigurationError(x)
+    if not folder_name:
+        folder_name = '/root' if user_name == 'root' else f'/home/{user_name}'
+    return {
+        'path_name': path_name,
+        'folder_name': folder_name}
 
 
 async def validate_package_identifiers(d):
@@ -853,8 +908,11 @@ async def validate_api_identifiers(d):
     domain = get_required_string(d, 'domain', 'api')
     domain = DOMAIN_PATTERN.sub('', domain.lower()).strip('.-')
     stage = get_required_string(d, 'stage', 'api')
-    if stage not in ['setup', 'run']:
-        x = f'stage "{stage}" is not supported'
+    if stage not in STAGE_NAMES:
+        stage_names_string = ', '.join(STAGE_NAMES)
+        x = (
+            f'stage "{stage}" is not supported; '
+            f'expected {stage_names_string}')
         raise CrossComputeConfigurationError(x)
     return {'domain': domain, 'stage': stage}
 
@@ -1001,6 +1059,15 @@ def get_required_string(d, k, x):
     return value
 
 
+def get_optional_string(d, k, x, v=None):
+    try:
+        value = d.get(k, v).strip()
+    except AttributeError:
+        raise CrossComputeConfigurationError(
+            f'{x} {k} must be a string')
+    return value
+
+
 def get_required_integer(d, k, x):
     try:
         value = int(d[k])
@@ -1101,4 +1168,5 @@ def assert_unique_values(values, description):
 YIELD_DATA_BY_ID_BY_SUFFIX = {
     '.csv': yield_data_by_id_from_csv,
     '.txt': yield_data_by_id_from_txt}
+STAGE_NAMES = ['setup', 'run']
 L = getLogger(__name__)
