@@ -723,9 +723,7 @@ async def validate_execution_variables(d):
     for variable_definition in variable_definitions:
         variable_id = variable_definition.id
         if getenv(variable_id) is None:
-            L.error(
-                'tool environment is missing execution variable "%s"',
-                variable_id)
+            L.error(f'tool environment is missing variable "{variable_id}"')
     assert_unique_values(
         [_['id'] for _ in variable_definitions],
         'execution variable id "{x}"')
