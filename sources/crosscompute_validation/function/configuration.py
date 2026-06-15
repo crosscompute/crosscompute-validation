@@ -1,8 +1,8 @@
 # TODO: Check string lengths
 import csv
 from collections import Counter
+from contextlib import suppress
 from logging import getLogger
-from os import getenv
 from os.path import basename
 from pathlib import PurePath
 
@@ -142,8 +142,8 @@ class StepDefinition(Definition):
 class PresetDefinition(Definition):
 
     async def _initialize(self, **kwargs):
-        self.tool_definition = kwargs['tool_definition']
         self.data = kwargs['data']
+        self.tool_definition = kwargs['tool_definition']
         self._validation_functions.extend([
             validate_preset_identifiers,
             validate_preset_reference,
@@ -218,6 +218,7 @@ class SetupDefinition(Definition):
 
     async def _initialize(self, **kwargs):
         self.user_name = kwargs['user_name']
+        self.tool_definition = kwargs['tool_definition']
         self._validation_functions.extend([
             validate_setup_identifiers])
 
@@ -354,10 +355,11 @@ async def validate_protocol(d):
         raise CrossComputeConfigurationError(x)
     if not is_equivalent_version(
             protocol_version, PROTOCOL_VERSION, version_depth=3):
-        raise CrossComputeConfigurationError(
+        x = (
             f'crosscompute protocol {PROTOCOL_VERSION} is not compatible with '
             f'crosscompute {PROTOCOL_VERSION}, which is currently installed; '
             f'pip install crosscompute=={PROTOCOL_VERSION}')
+        raise CrossComputeConfigurationError(x)
     return {
         'protocol_version': protocol_version}
 
@@ -370,21 +372,20 @@ async def validate_paths(d):
         if k in ['path', 'folder']:
             try:
                 path = folder / v
-            except TypeError:
-                raise CrossComputeConfigurationError(
-                    f'{k} "{redact_path(v)}" must be a string')
+            except TypeError as e:
+                x = f'{k} "{redact_path(v)}" must be a string'
+                raise CrossComputeConfigurationError(x) from e
             if not await is_path_in_folder(path, folder):
-                raise CrossComputeConfigurationError(
+                x = (
                     f'{k} "{redact_path(v)}" must be in folder '
                     f'"{redact_path(folder)}"')
+                raise CrossComputeConfigurationError(x)
         elif isinstance(v, dict):
             packs.extend(v.items())
         elif isinstance(v, list):
             for x in v:
-                try:
+                with suppress(AttributeError):
                     packs.extend(x.items())
-                except AttributeError:
-                    pass
     return {}
 
 
@@ -412,8 +413,8 @@ async def validate_tools(d):
         if 'path' in tool_map:
             path = tool_folder / tool_map['path']
         else:
-            raise CrossComputeConfigurationError(
-                'path is required for each tool')
+            x = 'path is required for each tool'
+            raise CrossComputeConfigurationError(x)
         try:
             tool_configuration = await load_configuration(
                 path, f'{d.locus}-{i}')
@@ -471,7 +472,7 @@ async def validate_presets(d):
     preset_definitions = []
     for preset_map in get_maps(d, 'presets'):
         preset_definition = await PresetDefinition.load(
-            preset_map, tool_definition=d, data={})
+            preset_map, data={}, tool_definition=d)
         preset_definitions.extend(preset_definition.preset_definitions)
     if 'output' in d and not preset_definitions:
         raise CrossComputeConfigurationError(
@@ -683,10 +684,11 @@ async def validate_setup(d):
     setup_definition_by_user_name = {}
     setup_map = get_map(d, 'setup')
     for user_name in setup_map:
-        script_map = get_map(d, user_name)
+        script_map = get_map(setup_map, user_name)
         setup_definition_by_user_name[user_name] = await SetupDefinition.load(
-            script_map, user_name=user_name)
-    return setup_definition_by_user_name
+            script_map, user_name=user_name, tool_definition=d.tool_definition)
+    return {
+        'setup_definition_by_user_name': setup_definition_by_user_name}
 
 
 async def validate_packages(d):
@@ -720,10 +722,6 @@ async def validate_execution_variables(d):
     variable_maps = get_maps(d, 'variables')
     variable_definitions = [await ExecutionVariableDefinition.load(
         _) for _ in variable_maps]
-    for variable_definition in variable_definitions:
-        variable_id = variable_definition.id
-        if getenv(variable_id) is None:
-            L.error(f'tool environment is missing variable "{variable_id}"')
     assert_unique_values(
         [_['id'] for _ in variable_definitions],
         'execution variable id "{x}"')
@@ -813,18 +811,15 @@ async def validate_template_identifiers(d):
 
 
 async def validate_setup_identifiers(d):
+    tool_folder = d.tool_definition.absolute_folder
     user_name = d.user_name
     key = f'setup.{user_name}'
     path_name = get_required_string(d, 'path', key)
-    folder_name = get_optional_string(d, 'folder', key)
-    if not await is_existing_path(path_name):
+    if not await is_existing_path(tool_folder / path_name):
         x = f'{key} path "{path_name}" is invalid'
         raise CrossComputeConfigurationError(x)
-    if not folder_name:
-        folder_name = '/root' if user_name == 'root' else f'/home/{user_name}'
     return {
-        'path_name': path_name,
-        'folder_name': folder_name}
+        'path_name': path_name}
 
 
 async def validate_package_identifiers(d):
@@ -905,14 +900,16 @@ async def validate_button_identifiers(d):
 async def validate_api_identifiers(d):
     domain = get_required_string(d, 'domain', 'api')
     domain = DOMAIN_PATTERN.sub('', domain.lower()).strip('.-')
-    stage = get_required_string(d, 'stage', 'api')
-    if stage not in STAGE_NAMES:
+    stage_name = get_required_string(d, 'stage', 'api')
+    if stage_name not in STAGE_NAMES:
         stage_names_string = ', '.join(STAGE_NAMES)
         x = (
-            f'stage "{stage}" is not supported; '
+            f'stage "{stage_name}" is not supported; '
             f'expected {stage_names_string}')
         raise CrossComputeConfigurationError(x)
-    return {'domain': domain, 'stage': stage}
+    return {
+        'domain': domain,
+        'stage_name': stage_name}
 
 
 async def yield_data_by_id_from_csv(path, variable_definitions):

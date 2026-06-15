@@ -459,10 +459,8 @@ execution:
   setup:
     root:
       path: setup-root.sh
-      folder: /root
     user:
       path: setup-user.sh
-      folder: /home/user
   # packages are dependencies required by your scripts;
   # engine=unsafe will install the packages directly on your machine;
   # engine=podman will install the packages in the container image
