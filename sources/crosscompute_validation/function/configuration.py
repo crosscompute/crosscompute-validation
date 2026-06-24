@@ -442,8 +442,8 @@ async def validate_steps(d):
         assert_unique_values(variable_ids, 'variable id "{x}"')
         tool_variable_ids.extend(variable_ids)
     if 'return_code' in tool_variable_ids:
-        raise CrossComputeConfigurationError(
-            '"return_code" is a reserved variable')
+        x = '"return_code" is a reserved variable'
+        raise CrossComputeConfigurationError(x)
     return {'step_definition_by_name': step_definition_by_name}
 
 
@@ -475,8 +475,8 @@ async def validate_presets(d):
             preset_map, data={}, tool_definition=d)
         preset_definitions.extend(preset_definition.preset_definitions)
     if 'output' in d and not preset_definitions:
-        raise CrossComputeConfigurationError(
-            'no presets found; define at least one preset')
+        x = 'no presets found; define at least one preset'
+        raise CrossComputeConfigurationError(x)
     assert_unique_values([
         _.folder_name for _ in preset_definitions], 'preset folder "{x}"')
     assert_unique_values([
@@ -542,7 +542,7 @@ async def validate_step_templates(d):
 
 async def validate_preset_identifiers(d):
     folder = get_text(d, 'folder')
-    name = get_text(d, 'name', basename(folder))
+    name = get_text(d, 'name', basename(folder))  # noqa: PTH119
     slug = get_text(d, 'slug', name)
     data_by_id = d.data.get(STEP_INPUT, {})
     try:
@@ -585,9 +585,9 @@ async def validate_preset_configuration(d):
         suffix = path.suffix
         try:
             yield_data_by_id = YIELD_DATA_BY_ID_BY_SUFFIX[suffix]
-        except KeyError:
-            raise CrossComputeConfigurationError(
-                f'preset configuration suffix "{suffix}" is not supported')
+        except KeyError as e:
+            x = f'preset configuration suffix "{suffix}" is not supported'
+            raise CrossComputeConfigurationError(x) from e
         input_variable_definitions = tool_definition.get_variable_definitions(
             'input')
         async for _ in yield_data_by_id(path, input_variable_definitions):
@@ -608,16 +608,16 @@ async def validate_preset_configuration(d):
 async def validate_dataset_identifiers(d):
     path_name = get_required_string(d, 'path', 'dataset')
     if not is_contained_path(path_name):
-        raise CrossComputeConfigurationError(
-            f'dataset path "{path_name}" is invalid')
+        x = f'dataset path "{path_name}" is invalid'
+        raise CrossComputeConfigurationError(x)
     input_mode = d.get('input', 'none')
     if input_mode not in ['none', 'replace']:
-        raise CrossComputeConfigurationError(
-            f'dataset input "{input_mode}" is not supported')
+        x = f'dataset input "{input_mode}" is not supported'
+        raise CrossComputeConfigurationError(x)
     output_mode = d.get('output', 'none')
     if output_mode not in ['none', 'append', 'replace']:
-        raise CrossComputeConfigurationError(
-            f'dataset output "{output_mode}" is not supported')
+        x = f'dataset output "{output_mode}" is not supported'
+        raise CrossComputeConfigurationError(x)
     return {
         'path_name': path_name,
         'input_mode': input_mode,
@@ -633,15 +633,17 @@ async def validate_dataset_reference(d):
             source_path = tool_folder / reference_path
             if not await is_existing_path(source_path):
                 if await is_link_path(source_path):
-                    raise CrossComputeConfigurationError(
-                        f'dataset reference link "{reference_path}" is '
-                        'invalid')
-                elif source_path.name == 'results':
+                    x = (
+                        'dataset reference link '
+                        f'"{redact_path(reference_path)}" is invalid')
+                    raise CrossComputeConfigurationError(x)
+                if source_path.name == 'results':
                     source_path.mkdir(parents=True)
                 else:
-                    raise CrossComputeConfigurationError(
-                        f'dataset reference path "{reference_path}" was not '
-                        'found')
+                    x = (
+                        'dataset reference path '
+                        f'"{redact_path(reference_path)}" was not found')
+                    raise CrossComputeConfigurationError(x)
     elif 'uri' in dataset_reference:
         pass
     return {'reference': dataset_reference}
@@ -662,12 +664,12 @@ async def validate_script_identifiers(d):
             d.get('language', SCRIPT_LANGUAGE), d['function'])
         method_names.append('function')
     if not method_names:
-        raise CrossComputeConfigurationError(
-            'script command or path or function is required')
-    elif len(method_names) > 1:
+        x = 'script command or path or function is required'
+        raise CrossComputeConfigurationError(x)
+    if len(method_names) > 1:
         method_string = ' and '.join(method_names)
-        raise CrossComputeConfigurationError(
-            f'script {method_string} conflict; choose one')
+        x = f'script {method_string} conflict; choose one'
+        raise CrossComputeConfigurationError(x)
     return {
         'folder': PurePath(d.get('folder', '.')),
         'command_string': command_string,
@@ -755,20 +757,23 @@ async def validate_step_variable_identifiers(d):
     mode_name = d.get('mode', '').strip()
     label_text = d.get('label', format_name(variable_id)).strip()
     if not VARIABLE_ID_PATTERN.match(variable_id):
-        raise CrossComputeConfigurationError(
+        x = (
             f'variable "{variable_id}" is not a valid variable id; please use '
             'only lowercase, uppercase, numbers and underscores')
+        raise CrossComputeConfigurationError(x)
     if view_name not in view_by_name:
-        raise CrossComputeConfigurationError(
+        x = (
             f'variable "{variable_id}" view "{view_name}" is not installed or '
             'not supported')
+        raise CrossComputeConfigurationError(x)
     if path_name.startswith(('/', '..')):
-        raise CrossComputeConfigurationError(
+        x = (
             f'variable "{variable_id}" path "{path_name}" must be within the '
             'folder')
-    if mode_name and mode_name not in ['input']:
-        raise CrossComputeConfigurationError(
-            f'variable "{variable_id}" mode must be "input" if specified')
+        raise CrossComputeConfigurationError(x)
+    if mode_name and mode_name != 'input':
+        x = f'variable "{variable_id}" mode must be "input" if specified'
+        raise CrossComputeConfigurationError(x)
     return {
         'id': variable_id,
         'view_name': view_name,
@@ -826,12 +831,12 @@ async def validate_package_identifiers(d):
     package_id = get_required_string(d, 'id', 'package')
     manager_name = get_required_string(d, 'manager', 'package')
     if manager_name not in ['dnf', 'apt', 'pip', 'npm']:
-        raise CrossComputeConfigurationError(
-            f'package manager "{manager_name}" is not supported')
+        x = f'package manager "{manager_name}" is not supported'
+        raise CrossComputeConfigurationError(x)
     mode_name = d.get('mode', '').strip()
     if mode_name not in ['', 'development']:
-        raise CrossComputeConfigurationError(
-            f'package mode "{mode_name}" is not supported')
+        x = f'package mode "{mode_name}" is not supported'
+        raise CrossComputeConfigurationError(x)
     return {
         'id': package_id,
         'manager_name': manager_name,
@@ -843,9 +848,9 @@ async def validate_port_identifiers(d):
     port_number = get_required_string(d, 'number', 'port')
     try:
         port_number = int(port_number)
-    except ValueError:
-        raise CrossComputeConfigurationError(
-            f'port number "{port_number}" must be an integer')
+    except ValueError as e:
+        x = f'port number "{port_number}" must be an integer'
+        raise CrossComputeConfigurationError(x) from e
     return {
         'id': port_id,
         'number': port_number}
@@ -855,8 +860,8 @@ async def validate_style_identifiers(d):
     path_name = d.get('path', '').strip()
     uri = d.get('uri', '').strip()
     if not path_name and not uri:
-        raise CrossComputeConfigurationError(
-            'style path or uri is required')
+        x = 'style path or uri is required'
+        raise CrossComputeConfigurationError(x)
     return {
         'path_name': path_name,
         'uri': uri}
@@ -869,17 +874,17 @@ async def validate_page_identifiers(d):
         if not design_name:
             design_name = 'input'
         if design_name not in ['input', 'output', 'none']:
-            raise CrossComputeConfigurationError(
-                f'tool design "{design_name}" is not supported')
+            x = f'tool design "{design_name}" is not supported'
+            raise CrossComputeConfigurationError(x)
     elif page_id in ['input', 'output', 'log', 'debug']:
         if not design_name:
             design_name = 'flex'
         if design_name not in ['flex', 'accordion', 'bare', 'none']:
-            raise CrossComputeConfigurationError(
-                f'tool design "{design_name}" is not supported')
+            x = f'tool design "{design_name}" is not supported'
+            raise CrossComputeConfigurationError(x)
     else:
-        raise CrossComputeConfigurationError(
-            f'page id "{page_id}" is not supported')
+        x = f'page id "{page_id}" is not supported'
+        raise CrossComputeConfigurationError(x)
     button_maps = get_maps(d, 'buttons')
     button_definitions = [await ButtonDefinition.load(_) for _ in button_maps]
     return {
@@ -894,7 +899,9 @@ async def validate_button_identifiers(d):
         x = f'button id "{button_id}" is not supported'
         raise CrossComputeConfigurationError(x)
     button_text = get_required_string(d, 'text', 'button')
-    return {'id': button_id, 'text': button_text}
+    return {
+        'id': button_id,
+        'text': button_text}
 
 
 async def validate_api_identifiers(d):
@@ -920,11 +927,15 @@ async def yield_data_by_id_from_csv(path, variable_definitions):
             keys = [_.strip() for _ in next(csv_reader)]
             for values in csv_reader:
                 data_by_id = await parse_data_by_id({
-                    k: {DATA_VALUE: v} for k, v in zip(keys, values)
+                    k: {DATA_VALUE: v}
+                    for k, v in zip(keys, values, strict=True)
                 }, variable_definitions)
                 if data_by_id.get('#') == '#':
                     continue
                 yield data_by_id
+    except ValueError as e:
+        x = f'row={values} does not have {len(keys)} columns'
+        raise CrossComputeConfigurationError(x, path=path) from e
     except OSError as e:
         raise CrossComputeConfigurationError(e) from e
     except StopIteration:
@@ -933,15 +944,17 @@ async def yield_data_by_id_from_csv(path, variable_definitions):
 
 async def yield_data_by_id_from_txt(path, variable_definitions):
     if len(variable_definitions) > 1:
-        raise CrossComputeConfigurationError(
+        x = (
             'use preset configuration suffix ".csv" to configure multiple '
             'variables')
+        raise CrossComputeConfigurationError(x)
     try:
         variable_id = variable_definitions[0].id
-    except IndexError:
-        raise CrossComputeConfigurationError(
+    except IndexError as e:
+        x = (
             'define at least one input variable when using preset '
             'configuration suffix ".txt"')
+        raise CrossComputeConfigurationError(x) from e
     try:
         async with aiofiles.open(path, mode='rt') as f:
             lines = await f.readlines()
@@ -954,7 +967,7 @@ async def yield_data_by_id_from_txt(path, variable_definitions):
                     data_by_id, variable_definitions)
                 yield data_by_id
     except OSError as e:
-        raise CrossComputeConfigurationError(e)
+        raise CrossComputeConfigurationError(e) from e
 
 
 async def parse_data_by_id(data_by_id, variable_definitions):
@@ -993,11 +1006,12 @@ def prepare_script_path(script_path):
             command_string = f'bash "{path}"'
             preparation_map = {}
         case _:
-            suffixes_string = ' '.join(['.py', '.ipynb'])
-            raise CrossComputeConfigurationError(
+            suffixes_string = ' '.join(SCRIPT_SUFFIXES)
+            x = (
                 f'script path suffix can be one of {suffixes_string}; '
                 f'message {SUPPORT_EMAIL} to request support for '
                 'more suffixes')
+            raise CrossComputeConfigurationError(x)
     return command_string, preparation_map
 
 
@@ -1010,15 +1024,16 @@ def prepare_script_function(script_language, function_string):
                 'target_path': path,
                 'function_string': function_string}
         case _:
-            languages_string = ' '.join(['python'])
-            raise CrossComputeConfigurationError(
+            languages_string = ' '.join(SCRIPT_LANGUAGES)
+            x = (
                 f'script language can be one of {languages_string}; '
                 f'message {SUPPORT_EMAIL} to request support for '
                 'more languages')
+            raise CrossComputeConfigurationError(x)
     return command_string, preparation_map
 
 
-def process_header_footer_options(variable_id, print_configuration):
+def process_header_footer_options(variable_id, print_configuration):  # noqa: ARG001
     k = 'header-footer'
     d = get_map(print_configuration, k)
     d['skip-first'] = bool(d.get('skip-first'))
@@ -1029,61 +1044,63 @@ def process_page_number_options(variable_id, print_configuration):
     d = get_map(print_configuration, k)
     location = d.get('location')
     if location and location not in ['header', 'footer']:
-        raise CrossComputeConfigurationError(
+        x = (
             f'print variable "{variable_id}" configuration "{k}" '
             f'location "{location}" is not supported')
+        raise CrossComputeConfigurationError(x)
     alignment = d.get('alignment')
     if alignment and alignment not in ['left', 'center', 'right']:
-        raise CrossComputeConfigurationError(
+        x = (
             f'print variable "{variable_id}" configuration "{k}" '
             f'alignment "{alignment}" is not supported')
+        raise CrossComputeConfigurationError(x)
 
 
 def get_required_string(d, k, x):
     try:
         value = d[k].strip()
-    except KeyError:
-        raise CrossComputeConfigurationError(
-            f'{x} {k} is required')
-    except AttributeError:
-        raise CrossComputeConfigurationError(
-            f'{x} {k} must be a string')
+    except KeyError as e:
+        m = f'{x} {k} is required'
+        raise CrossComputeConfigurationError(m) from e
+    except AttributeError as e:
+        m = f'{x} {k} must be a string'
+        raise CrossComputeConfigurationError(m) from e
     if not value:
-        raise CrossComputeConfigurationError(
-            f'{x} {k} cannot be empty')
+        m = f'{x} {k} cannot be empty'
+        raise CrossComputeConfigurationError(m)
     return value
 
 
 def get_optional_string(d, k, x, v=None):
     try:
         value = d.get(k, v).strip()
-    except AttributeError:
-        raise CrossComputeConfigurationError(
-            f'{x} {k} must be a string')
+    except AttributeError as e:
+        m = f'{x} {k} must be a string'
+        raise CrossComputeConfigurationError(m) from e
     return value
 
 
 def get_required_integer(d, k, x):
     try:
         value = int(d[k])
-    except KeyError:
-        raise CrossComputeConfigurationError(
-            f'{x} {k} is required')
-    except (TypeError, ValueError):
-        raise CrossComputeConfigurationError(
-            f'{x} {k} must be an integer')
+    except KeyError as e:
+        m = f'{x} {k} is required'
+        raise CrossComputeConfigurationError(m) from e
+    except (TypeError, ValueError) as e:
+        m = f'{x} {k} must be an integer'
+        raise CrossComputeConfigurationError(m) from e
     return value
 
 
 def get_required_integers(d, k, x):
     try:
         values = [int(_) for _ in get_list(d, k)]
-    except (TypeError, ValueError):
-        raise CrossComputeConfigurationError(
-            f'{x} {k} must be integers')
+    except (TypeError, ValueError) as e:
+        m = f'{x} {k} must be integers'
+        raise CrossComputeConfigurationError(m) from e
     if not values:
-        raise CrossComputeConfigurationError(
-            f'{x} {k} are required')
+        m = f'{x} {k} are required'
+        raise CrossComputeConfigurationError(m)
     return values
 
 
@@ -1091,38 +1108,38 @@ def get_maps(d, k):
     values = get_list(d, k)
     for v in values:
         if not isinstance(v, dict):
-            raise CrossComputeConfigurationError(
-                f'{k} must be a list of maps')
+            m = f'{k} must be a list of maps'
+            raise CrossComputeConfigurationError(m)
     return values
 
 
 def get_map(d, k):
     value = d.get(k, {})
     if not isinstance(value, dict):
-        raise CrossComputeConfigurationError(f'{k} must be a map')
+        m = f'{k} must be a map'
+        raise CrossComputeConfigurationError(m)
     return value
 
 
 def get_list(d, k):
     value = d.get(k, [])
     if not isinstance(value, list):
-        raise CrossComputeConfigurationError(f'{k} must be a list')
+        m = f'{k} must be a list'
+        raise CrossComputeConfigurationError(m)
     return value
 
 
 def get_text(d, k, default=None):
     value = d.get(k) or default
     if isinstance(value, dict):
-        raise CrossComputeConfigurationError(
-            f'"{k}" must be surrounded with quotes when it begins with a {{')
+        m = f'"{k}" must be surrounded with quotes when it begins with a {{'
+        raise CrossComputeConfigurationError(m)
     return value
 
 
 def get_path(d):
     path = d.get('path', '').strip()
-    if not path:
-        return
-    return PurePath(path)
+    return PurePath(path) if path else None
 
 
 def format_text(text, data_by_id):
@@ -1135,19 +1152,20 @@ def format_text(text, data_by_id):
         variable_id = terms[0].strip()
         try:
             variable_data = data_by_id[variable_id]
-        except KeyError:
+        except KeyError as e:
+            x = f'preset "{text}" missing value'
             raise CrossComputeConfigurationError(
-                f'preset "{text}" missing value',
-                variable_id=variable_id)
+                x, variable_id=variable_id) from e
         value = variable_data.get(DATA_VALUE, '')
         try:
             value = apply_functions(value, terms[1:], {
                 'slug': format_slug,
                 'title': str.title})
         except KeyError as e:
-            raise CrossComputeConfigurationError(
+            x = (
                 f'function "{e.args[0]}" is not supported in '
                 f'"{matching_inner_text}"')
+            raise CrossComputeConfigurationError(x) from e
         return str(value)
 
     return VARIABLE_ID_TEMPLATE_PATTERN.sub(f, text)
@@ -1164,4 +1182,6 @@ YIELD_DATA_BY_ID_BY_SUFFIX = {
     '.csv': yield_data_by_id_from_csv,
     '.txt': yield_data_by_id_from_txt}
 STAGE_NAMES = ['setup', 'run']
+SCRIPT_SUFFIXES = ['.py', '.ipynb', '.sh']
+SCRIPT_LANGUAGES = ['python']
 L = getLogger(__name__)

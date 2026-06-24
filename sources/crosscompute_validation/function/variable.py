@@ -1,4 +1,3 @@
-from importlib.metadata import entry_points
 from logging import getLogger
 from os.path import join, splitext
 
@@ -11,8 +10,8 @@ from crosscompute_macros.disk import (
 from crosscompute_macros.error import (
     DiskError,
     ParsingError)
-from crosscompute_macros.package import (
-    import_attribute)
+from crosscompute_views.base import (
+    LoadableVariableView)
 
 from ..constant import (
     DATA_CONFIGURATION,
@@ -22,56 +21,8 @@ from ..constant import (
     RAW_DATA_CACHE_LENGTH)
 from ..error import (
     CrossComputeDataError)
-from ..setting import (
-    view_by_name)
 from .disk import (
     get_matching_paths)
-
-
-class LoadableVariableView:
-
-    name = 'variable'
-
-    @classmethod
-    def get_from(Class, variable):
-        view_name = variable.view_name
-        try:
-            View = view_by_name[view_name]
-        except KeyError:
-            L.error(
-                'view "%s" is not installed and is needed by variable "%s"',
-                view_name, variable.id)
-            View = Class
-        return View(variable)
-
-    def __init__(self, variable):
-        self.variable = variable
-
-    async def parse(self, data):
-        return data
-
-
-class LoadableNumberView(LoadableVariableView):
-
-    async def parse(self, value):
-        try:
-            value = float(value)
-        except ValueError as e:
-            x = f'value "{value}" is not a number'
-            raise CrossComputeDataError(
-                x, variable_id=self.variable.id) from e
-        if value.is_integer():
-            value = int(value)
-        return value
-
-
-def initialize_view_by_name(d=None, with_entry_points=False):
-    if with_entry_points:
-        for entry_point in entry_points().select(group='crosscompute.views'):
-            view_by_name[entry_point.name] = import_attribute(
-                entry_point.value)
-    if d:
-        view_by_name.update(d)
 
 
 async def load_variable_data_by_id(folder, variables):
@@ -89,9 +40,10 @@ async def load_variable_data_by_id(folder, variables):
     return data_by_id
 
 
-async def load_variable_data(folder, variable, with_configuration_path=True):
+async def load_variable_data(
+        folder, variable, *, with_configuration_path=True):
     variable_path = variable.path_name
-    path = join(folder, variable_path)
+    path = join(folder, variable_path)  # noqa: PTH118
     if '{index}' in variable_path:
         return {DATA_PATH: path}
     variable_id = variable.id
@@ -134,7 +86,8 @@ async def restore_data_configuration(
         with_configuration_path):
     variable_configuration = variable.configuration
     data_configuration = {}
-    default_path = join(folder, variable.path_name + '.configuration')
+    default_path = join(  # noqa: PTH118
+        folder, variable.path_name + '.configuration')
     if variable_value_by_id:
         variable_id = variable.id
         v = variable_value_by_id.get(variable_id + '.configuration', {})
@@ -145,7 +98,8 @@ async def restore_data_configuration(
     elif with_configuration_path and await is_existing_path(default_path):
         await update_data_configuration(data_configuration, default_path)
     if 'path' in variable_configuration:
-        custom_path = join(folder, variable_configuration['path'])
+        custom_path = join(  # noqa: PTH118
+            folder, variable_configuration['path'])
         await update_data_configuration(data_configuration, custom_path)
     if data_configuration:
         variable_data[DATA_CONFIGURATION] = data_configuration
@@ -172,7 +126,7 @@ async def load_raw_data(path):
             path = matching_paths[0]
         case _:
             return {DATA_PATH: path}
-    suffix = splitext(path)[1]
+    suffix = splitext(path)[1]  # noqa: PTH122
     if suffix == '.dictionary':
         return await load_dictionary_data(path)
     if suffix in ['.md', '.txt']:
