@@ -1,6 +1,14 @@
 import re
+from enum import Enum
 
 from . import __version__ as protocol_version
+
+
+class ToolAccess(Enum):
+    PRIVATE = 0
+    PROTECTED = 2
+    HIDDEN = 5
+    PUBLIC = 7
 
 
 PROTOCOL_VERSION = protocol_version
@@ -34,7 +42,7 @@ ENGINE_NAME = 'podman'
 IMAGE_NAME = 'python:slim'
 
 
-PRINTER_NAMES = 'pdf',
+PRINTER_NAMES = ('pdf',)
 
 
 SUPPORT_EMAIL = 'support@crosscompute.com'
