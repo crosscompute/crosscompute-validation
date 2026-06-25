@@ -5,9 +5,9 @@ from crosscompute_macros.disk import (
     make_soft_link,
     remove_path)
 
-from crosscompute_validation.error import (
+from crosscompute_definitions.error import (
     CrossComputeConfigurationError)
-from crosscompute_validation.function.configuration import (
+from crosscompute_definitions.function.configuration import (
     Definition,
     validate_paths,
     validate_steps)

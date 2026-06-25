@@ -8,9 +8,9 @@ from crosscompute_macros.abstract import (
 from crosscompute_views.base import (
     initialize_view_by_name)
 
-from crosscompute_validation.constant import (
+from crosscompute_definitions.constant import (
     DATA_VALUE)
-from crosscompute_validation.function.variable import (
+from crosscompute_definitions.function.variable import (
     load_variable_data)
 
 

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "crosscompute-validation"
+name = "crosscompute-definitions"
 version = "0.9.5"
 dependencies = [
     "aiofiles",
@@ -33,12 +33,12 @@ test = ["pytest-asyncio", "pytest-cov", "pytest-xdist"]
 [project.urls]
 # Homepage = ""
 # Documentation = ""
-Repository = "https://github.com/crosscompute/crosscompute-validation"
-Issues = "https://github.com/crosscompute/crosscompute-validation/issues"
+Repository = "https://github.com/crosscompute/crosscompute-definitions"
+Issues = "https://github.com/crosscompute/crosscompute-definitions/issues"
 # Changelog = ""
 
 [tool.hatch.build]
-packages = ["sources/crosscompute_validation"]
+packages = ["sources/crosscompute_definitions"]
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "session"
